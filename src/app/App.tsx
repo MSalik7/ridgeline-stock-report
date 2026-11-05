@@ -43,6 +43,7 @@ import { SetupView } from "./views/SetupView";
 import { SupplierPortal } from "./views/SupplierPortal";
 import { ScorecardView } from "./views/ScorecardView";
 import { CommandPalette } from "./CommandPalette";
+import { CoffeeBackdrop } from "./components/coffee";
 import { useDialogs, type Dialogs } from "./dialogs/DialogProvider";
 
 function useHash() {
@@ -90,7 +91,8 @@ export function App() {
   else page = <StockView />;
 
   return (
-    <div className="min-h-full lg:grid lg:grid-cols-[15rem_1fr]">
+    <div className="relative isolate min-h-full lg:grid lg:grid-cols-[15rem_1fr]">
+      <CoffeeBackdrop />
       <Sidebar section={section} supplier={supplier} />
       <div className="flex min-w-0 flex-col">
         <MobileTopBar onSearch={supplier ? undefined : () => setPalette(true)} />
@@ -176,7 +178,7 @@ function Brand() {
 function Sidebar({ section, supplier }: { section: Section; supplier: boolean }) {
   const nav = useNav();
   return (
-    <aside className="sticky top-0 hidden h-dvh flex-col border-r bg-sidebar lg:flex">
+    <aside className="sticky top-0 hidden h-dvh flex-col border-r bg-sidebar/75 backdrop-blur-xl lg:flex">
       <div className="px-4 pt-5 pb-4">
         <Brand />
       </div>
@@ -248,7 +250,7 @@ function BottomNav({ section }: { section: Section }) {
     <>
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background/95 pr-[max(8px,env(safe-area-inset-right,0px))] pb-[env(safe-area-inset-bottom,0px)] pl-[max(8px,env(safe-area-inset-left,0px))] backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background/85 pr-[max(8px,env(safe-area-inset-right,0px))] pb-[env(safe-area-inset-bottom,0px)] pl-[max(8px,env(safe-area-inset-left,0px))] backdrop-blur lg:hidden"
       >
         {left.map(tab)}
         <div className="flex items-center justify-center">
@@ -327,7 +329,7 @@ function BottomNav({ section }: { section: Section }) {
 function MobileTopBar({ onSearch }: { onSearch?: () => void }) {
   const { now, report } = useApp();
   return (
-    <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 flex h-14 items-center justify-between gap-3 border-b bg-background/95 pl-[max(16px,env(safe-area-inset-left,0px))] pr-[max(16px,env(safe-area-inset-right,0px))] backdrop-blur lg:static lg:h-12 lg:bg-transparent lg:px-8 lg:backdrop-blur-none">
+    <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 flex h-14 items-center justify-between gap-3 border-b bg-background/80 pl-[max(16px,env(safe-area-inset-left,0px))] pr-[max(16px,env(safe-area-inset-right,0px))] backdrop-blur lg:static lg:h-12 lg:bg-transparent lg:px-8 lg:backdrop-blur-none">
       <div className="lg:hidden">
         <Brand />
       </div>

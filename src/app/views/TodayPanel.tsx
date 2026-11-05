@@ -16,6 +16,7 @@ import { CHASE_LABEL } from "@/domain/orders";
 import { useApp } from "../context";
 import { useDialogs } from "../dialogs/DialogProvider";
 import { Who, go } from "../components/bits";
+import { SteamingCup } from "../components/coffee";
 import { units } from "../format";
 
 const ICON = {
@@ -55,11 +56,13 @@ export function TodayPanel({ onChaseAll }: { onChaseAll: () => void }) {
           )}
         </div>
         {actions.length === 0 ? (
-          <div className="flex items-center gap-3 px-4 py-6 text-sm">
-            <CheckCircle2Icon className="size-5 text-st-ok" />
+          <div className="flex items-center gap-4 px-4 py-6 text-sm">
+            <SteamingCup className="size-12 shrink-0 text-foreground/70" />
             <div>
               <div className="font-medium">Nothing needs you right now.</div>
-              <div className="text-muted-foreground">Every product is above its reorder line and no supplier order needs chasing.</div>
+              <div className="text-muted-foreground">
+                Every product is above its reorder line and no supplier order needs chasing. Good moment for a coffee.
+              </div>
             </div>
           </div>
         ) : (

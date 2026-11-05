@@ -68,6 +68,14 @@
   --sg-production: oklch(0.6 0.13 295);
   --sg-transit: oklch(0.6 0.13 245);
   --sg-arrived: oklch(0.62 0.13 160);
+
+  /* Coffee backdrop: caramel, espresso and crema glows, beans and steam. */
+  --brew-caramel: oklch(0.78 0.1 65 / 0.38);
+  --brew-espresso: oklch(0.6 0.07 45 / 0.2);
+  --brew-crema: oklch(0.92 0.06 85 / 0.6);
+  --bean: oklch(0.45 0.07 45 / 0.7);
+  --bean-crease: oklch(0.3 0.05 40 / 0.75);
+  --steam: oklch(0.78 0.03 70 / 0.65);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -111,6 +119,12 @@
     --sg-production: oklch(0.68 0.12 295);
     --sg-transit: oklch(0.7 0.12 245);
     --sg-arrived: oklch(0.72 0.12 160);
+    --brew-caramel: oklch(0.55 0.11 60 / 0.3);
+    --brew-espresso: oklch(0.42 0.08 45 / 0.45);
+    --brew-crema: oklch(0.78 0.08 80 / 0.12);
+    --bean: oklch(0.58 0.08 55 / 0.45);
+    --bean-crease: oklch(0.3 0.04 45 / 0.7);
+    --steam: oklch(0.95 0.02 80 / 0.22);
   }
 }
 
@@ -154,6 +168,12 @@
   --sg-production: oklch(0.68 0.12 295);
   --sg-transit: oklch(0.7 0.12 245);
   --sg-arrived: oklch(0.72 0.12 160);
+  --brew-caramel: oklch(0.55 0.11 60 / 0.3);
+  --brew-espresso: oklch(0.42 0.08 45 / 0.45);
+  --brew-crema: oklch(0.78 0.08 80 / 0.12);
+  --bean: oklch(0.58 0.08 55 / 0.45);
+  --bean-crease: oklch(0.3 0.04 45 / 0.7);
+  --steam: oklch(0.95 0.02 80 / 0.22);
 }
 
 @theme inline {
@@ -236,11 +256,130 @@
   }
 }
 
+
+/*
+ * Coffee backdrop. Ambient and slow: glows drift over ~40 s, beans fall over
+ * ~a minute, steam rises from the bottom edge. Only transform and opacity
+ * animate; blur is fixed per element, so the browser composites it.
+ */
+.coffee-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.coffee-backdrop.is-paused *,
+.coffee-backdrop.is-still * {
+  animation-play-state: paused !important;
+}
+.brew {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 9999px;
+  will-change: transform;
+}
+.brew-caramel {
+  top: -28vmax;
+  left: -18vmax;
+  background: radial-gradient(closest-side, var(--brew-caramel), transparent);
+  animation: brew-a 42s ease-in-out infinite alternate;
+}
+.brew-espresso {
+  right: -24vmax;
+  bottom: -30vmax;
+  background: radial-gradient(closest-side, var(--brew-espresso), transparent);
+  animation: brew-b 48s ease-in-out infinite alternate;
+}
+.brew-crema {
+  top: 18vh;
+  left: 32vw;
+  width: 46vmax;
+  height: 46vmax;
+  background: radial-gradient(closest-side, var(--brew-crema), transparent);
+  animation: brew-c 36s ease-in-out infinite alternate;
+}
+@keyframes brew-a {
+  to { transform: translate3d(14vw, 10vh, 0) scale(1.12); }
+}
+@keyframes brew-b {
+  to { transform: translate3d(-16vw, -12vh, 0) scale(1.08); }
+}
+@keyframes brew-c {
+  to { transform: translate3d(-10vw, 8vh, 0) scale(0.9); }
+}
+.bean {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  width: var(--size);
+  height: calc(var(--size) * 1.35);
+  filter: blur(var(--blur));
+  opacity: var(--alpha);
+  will-change: transform;
+  animation: bean-fall var(--dur) linear infinite;
+  animation-delay: var(--delay);
+}
+@keyframes bean-fall {
+  from { transform: translate3d(0, calc(-1 * var(--y) - 20vh), 0) rotate(0deg); }
+  to { transform: translate3d(var(--dx), calc(120vh - var(--y)), 0) rotate(var(--spin)); }
+}
+.steam {
+  position: absolute;
+  bottom: -60px;
+  left: var(--x);
+  width: 90px;
+  height: 260px;
+  filter: blur(7px);
+  opacity: 0;
+  animation: steam-rise var(--dur) ease-out infinite;
+  animation-delay: var(--delay);
+}
+@keyframes steam-rise {
+  0% { transform: translate3d(0, 40px, 0) scaleY(0.7); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translate3d(var(--dx), -38vh, 0) scaleY(1.3); opacity: 0; }
+}
+
+/* A cup that fills while data loads, and steam over the "all clear" cup. */
+.cup-fill {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: cup-fill 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+@keyframes cup-fill {
+  0% { transform: scaleY(0.05); }
+  70%, 100% { transform: scaleY(1); }
+}
+.cup-steam {
+  animation: cup-steam 2.6s ease-out infinite;
+  transform-box: fill-box;
+}
+.cup-steam:nth-child(2) { animation-delay: 0.6s; }
+.cup-steam:nth-child(3) { animation-delay: 1.2s; }
+@keyframes cup-steam {
+  0% { transform: translateY(3px); opacity: 0; }
+  40% { opacity: 0.9; }
+  100% { transform: translateY(-5px); opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coffee-backdrop *,
+  .cup-fill,
+  .cup-steam {
+    animation: none !important;
+  }
+  .steam {
+    opacity: 0.6;
   }
 }

@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { DatabaseIcon, HardDriveIcon, LoaderIcon } from "lucide-react";
+import { DatabaseIcon, HardDriveIcon } from "lucide-react";
+import { CoffeeBackdrop, FillingCup } from "@/app/components/coffee";
 import "./index.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -38,9 +39,10 @@ function Waiting({ store }: { store: StoreState }) {
     );
   }
   return (
-    <div className="grid min-h-dvh place-items-center px-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <LoaderIcon className="size-4 animate-spin" />
+    <div className="relative isolate grid min-h-dvh place-items-center px-4">
+      <CoffeeBackdrop />
+      <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground" role="status">
+        <FillingCup className="size-12 text-foreground/70" />
         {store.slow ? "Shared data is slow to answer. Still trying…" : "Loading stock data…"}
       </div>
     </div>

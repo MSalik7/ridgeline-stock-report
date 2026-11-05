@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { useCoffeeMotion } from "../components/coffee";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { syncFeed } from "@/data/feed";
 import { ago, formatMoment } from "@/domain/dates";
@@ -410,6 +411,7 @@ function AlertsSetup() {
 
 function DataSetup() {
   const { data, store, now, run } = useApp();
+  const [motion, setMotion] = useCoffeeMotion();
   const [ask, setAsk] = useState<null | "reset" | "demo">(null);
   const feed = data.feed;
   return (
@@ -462,6 +464,18 @@ function DataSetup() {
             </Button>
           )}
         </div>
+      </Panel>
+      <Panel title="Display" description="Saved on this device only.">
+        <label htmlFor="coffee-motion" className="flex items-center justify-between gap-4">
+          <span>
+            <span className="block text-sm font-medium">Moving coffee background</span>
+            <span className="block text-xs text-muted-foreground">
+              {motion ? "Beans drift and steam rises behind the app." : "The background stays still."} It also stays still when your device asks for reduced
+              motion.
+            </span>
+          </span>
+          <Switch id="coffee-motion" checked={motion} onCheckedChange={setMotion} />
+        </label>
       </Panel>
       <Confirm
         open={ask === "reset"}

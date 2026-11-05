@@ -5,6 +5,7 @@ import { NewOrderDialog, EditOrderDialog, TrackingDialog } from "./OrderDialogs"
 import { ArrivalDialog, MatchDialog } from "./ArrivalDialogs";
 import { StockChangeDialog } from "./StockChangeDialog";
 import { MessageDialog } from "./MessageDialog";
+import { ChaseAllDialog } from "./ChaseAllDialog";
 
 type Open =
   | { kind: "newOrder"; productId?: string; units?: number }
@@ -15,6 +16,7 @@ type Open =
   | { kind: "stockChange"; productId?: string }
   | { kind: "orderMessage"; orderId: string }
   | { kind: "chase"; orderId: string; chase: ChaseKind }
+  | { kind: "chaseAll" }
   | null;
 
 export interface Dialogs {
@@ -26,6 +28,7 @@ export interface Dialogs {
   stockChange: (productId?: string) => void;
   orderMessage: (orderId: string) => void;
   chase: (orderId: string, chase: ChaseKind) => void;
+  chaseAll: () => void;
 }
 
 
@@ -41,6 +44,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     stockChange: (productId) => setOpen({ kind: "stockChange", productId }),
     orderMessage: (orderId) => setOpen({ kind: "orderMessage", orderId }),
     chase: (orderId, chase) => setOpen({ kind: "chase", orderId, chase }),
+    chaseAll: () => setOpen({ kind: "chaseAll" }),
   };
   return (
     <Ctx.Provider value={api}>
@@ -60,6 +64,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
       {open?.kind === "stockChange" && <StockChangeDialog productId={open.productId} onClose={close} />}
       {open?.kind === "orderMessage" && <MessageDialog orderId={open.orderId} onClose={close} />}
       {open?.kind === "chase" && <MessageDialog orderId={open.orderId} chase={open.chase} onClose={close} />}
+      {open?.kind === "chaseAll" && <ChaseAllDialog onClose={close} />}
     </Ctx.Provider>
   );
 }

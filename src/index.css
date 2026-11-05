@@ -50,15 +50,15 @@
   --chart-faint: oklch(0.93 0.025 245);
 
   /* Stock status */
-  --st-out: oklch(0.55 0.21 27);
+  --st-out: oklch(0.52 0.2 27);
   --st-out-bg: oklch(0.96 0.03 27);
-  --st-reorder: oklch(0.56 0.18 40);
+  --st-reorder: oklch(0.5 0.16 40);
   --st-reorder-bg: oklch(0.965 0.035 50);
-  --st-urgent: oklch(0.6 0.15 65);
+  --st-urgent: oklch(0.52 0.12 70);
   --st-urgent-bg: oklch(0.97 0.05 85);
-  --st-watch: oklch(0.55 0.1 95);
+  --st-watch: oklch(0.48 0.09 95);
   --st-watch-bg: oklch(0.975 0.035 100);
-  --st-ok: oklch(0.55 0.12 155);
+  --st-ok: oklch(0.48 0.11 155);
   --st-ok-bg: oklch(0.965 0.03 160);
   --st-none: oklch(0.55 0.01 255);
   --st-none-bg: oklch(0.96 0.004 250);

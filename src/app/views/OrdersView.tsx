@@ -137,7 +137,7 @@ export function OrdersView({ route }: { route: string }) {
                   <th className="text-right">Units</th>
                   <th className="w-[26%]">Where the units are</th>
                   <th>Status</th>
-                  <th className="pr-4">Ordered</th>
+                  <th className="pr-4">Ordered · due</th>
                 </tr>
               </thead>
               <tbody>
@@ -168,8 +168,8 @@ export function OrdersView({ route }: { route: string }) {
                       ))}
                     </td>
                     <td className="tnum pr-4 text-muted-foreground">
-                      {formatDay(o.order.orderedOn)}
-                      <div className="text-xs">{age(o, report.today)}</div>
+                      {formatDay(o.order.orderedOn)} <span className="text-xs">· {age(o, report.today)}</span>
+                      <Due o={o} />
                     </td>
                   </tr>
                 ))}
@@ -192,7 +192,7 @@ export function OrdersView({ route }: { route: string }) {
                   <StageBar p={o.progress} gone={o.status === "closed" ? o.progress.remaining : 0} className="mt-3" />
                   <div className="tnum mt-1.5 flex justify-between gap-2 text-xs text-muted-foreground">
                     <span>{summary(o)}</span>
-                    <span>{formatDay(o.order.orderedOn)}</span>
+                    <Due o={o} />
                   </div>
                   {o.alerts.filter((a) => a.due).map((a) => (
                     <div key={a.kind} className="mt-1 text-xs text-st-reorder">
@@ -208,6 +208,15 @@ export function OrdersView({ route }: { route: string }) {
       <OrderSheet orderId={openId} onClose={() => go("orders")} />
     </div>
   );
+}
+
+/** When the rest of the order should land: the earliest part still to come. */
+export function Due({ o }: { o: OrderView }) {
+  if (o.status === "received") return <div className="text-xs text-st-ok">All arrived</div>;
+  if (!o.open || !o.incoming.length) return <div className="text-xs">—</div>;
+  const late = o.incoming.find((i) => i.late);
+  if (late) return <div className="text-xs font-medium text-st-out">{late.daysLate} d late</div>;
+  return <div className="text-xs">due {formatDay(o.incoming[0].expectedOn)}</div>;
 }
 
 function summary(o: OrderView) {

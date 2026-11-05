@@ -4,3 +4,4 @@ artifact/
 seed/
 *.tsbuildinfo
 .claude/
+.impeccable/

@@ -11,6 +11,7 @@ import { useDialogs } from "../dialogs/DialogProvider";
 import { OrderBadge, StockBadge } from "../components/badges";
 import { CoverageBar, SalesChart, StageBar } from "../components/charts";
 import { PageHeader, Panel, Stat, UnitsInput, toInt } from "../components/bits";
+import { StockOutlook } from "../components/outlook";
 import { dec1, days as fmtDays, factor, units } from "../format";
 
 export function ProductView({ id }: { id: string }) {
@@ -79,8 +80,8 @@ function Product({ row }: { row: ProductRow }) {
         <Stat label="Sells per day" value={dec1(f.adjustedBurn)} hint={<>Trend {factor(f.trendFactor)}</>} />
         <Stat
           label="Days of stock"
-          value={fmtDays(f.daysOfStock, "")}
-          hint={f.flags.low === "urgent" ? "Under 21: urgent" : f.flags.low === "watch" ? "Under 45: watch" : "Warehouse only"}
+          value={f.flags.outOfStock ? "Out" : fmtDays(f.daysOfStock, "")}
+          hint={f.flags.outOfStock ? "Nothing in the warehouse" : f.flags.low === "urgent" ? "Under 21: urgent" : f.flags.low === "watch" ? "Under 45: watch" : "Warehouse only"}
           tone={f.flags.outOfStock ? "out" : f.flags.low === "urgent" ? "urgent" : f.flags.low === "watch" ? "watch" : undefined}
         />
         <Stat
@@ -92,12 +93,25 @@ function Product({ row }: { row: ProductRow }) {
         <Stat label="Sells out on" value={f.sellsOutOn ? formatDay(f.sellsOutOn) : "—"} hint={f.sellsOutOn ? formatWeekday(f.sellsOutOn).split(",")[0] : "No recent sales"} />
         <Stat
           label="Reorder by"
-          value={f.reorderBy ? formatDay(f.reorderBy) : "—"}
-          hint={reorderIn === null ? "No recent sales" : reorderIn < 0 ? `${-reorderIn} days ago` : reorderIn === 0 ? "Today" : `In ${reorderIn} days`}
-          tone={reorderIn !== null && reorderIn <= 0 ? "reorder" : undefined}
+          value={!f.reorderBy ? "—" : f.flags.reorderNow ? (f.flags.outOfStock || (reorderIn ?? 0) <= 0 ? "Now" : formatDay(f.reorderBy)) : (reorderIn ?? 0) < 0 ? "Covered" : formatDay(f.reorderBy)}
+          hint={
+            reorderIn === null
+              ? "No recent sales"
+              : f.flags.reorderNow
+                ? reorderIn < 0 ? `Was due ${formatDay(f.reorderBy!)}` : reorderIn === 0 ? "Today" : `In ${reorderIn} days`
+                : reorderIn < 0 ? "Open orders cover it" : `In ${reorderIn} days`
+          }
+          tone={f.flags.reorderNow ? "reorder" : undefined}
         />
         <Stat label="Suggested order" value={units(f.suggestedOrder)} hint={row.forecast.onOrder ? `${units(f.onOrder)} already on order` : "Nothing on order"} />
       </div>
+
+      <Panel
+        title="Stock outlook"
+        description="When open orders should land, and whether the shelf empties first. Sales continue at today's pace."
+      >
+        <StockOutlook row={row} />
+      </Panel>
 
       <div className="grid gap-6 lg:grid-cols-5">
         <TryOrder row={row} className="lg:col-span-3" />
@@ -166,6 +180,24 @@ function Callouts({ row }: { row: ProductRow }) {
         <>
           {fmtDays(f.daysOfStock, " days")} of stock in the warehouse, under {f.flags.low === "urgent" ? LOW_URGENT_DAYS : LOW_WATCH_DAYS} days.
           {!f.flags.reorderNow && f.onOrder > 0 ? ` Open orders cover ${fmtDays(f.daysWithOrdered, " days")} in total, so no reorder is needed yet.` : ""}
+        </>
+      ),
+    });
+  }
+  const o = row.outlook;
+  if (o.runsOutOn && !f.flags.outOfStock) {
+    const g = o.gaps[0];
+    items.push({
+      tone: "border-st-out/30 bg-st-out-bg text-st-out",
+      title: "Runs out before the next delivery",
+      body: !o.nextStock ? (
+        <>Stock runs out {formatDay(o.runsOutOn)} and nothing is on the way.</>
+      ) : o.nextStock.late ? (
+        <>Stock runs out {formatDay(o.runsOutOn)}. The next stock, {o.nextStock.orderName}, is {o.nextStock.daysLate} days late.</>
+      ) : (
+        <>
+          Stock runs out {formatDay(o.runsOutOn)}, but {o.nextStock.orderName} isn't due until {formatDay(o.nextStock.expectedOn)}: {g.days} days with nothing to
+          sell. Ask the supplier to ship early, or place a faster order.
         </>
       ),
     });

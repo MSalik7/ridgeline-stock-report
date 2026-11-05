@@ -50,6 +50,7 @@ export function OrderDetail({ view, onDeleted, supplierMode = false }: { view: O
   const { data, run } = useApp();
   const dialogs = useDialogs();
   const [ask, setAsk] = useState<null | "cancel" | "close" | "delete">(null);
+  const [removeTracking_, setRemoveTracking] = useState<{ id: string; label: string } | null>(null);
   const { order, progress: p, status } = view;
   const open = order.state === "open";
   const canTrack = open && order.units - p.tracked > 0;
@@ -106,6 +107,22 @@ export function OrderDetail({ view, onDeleted, supplierMode = false }: { view: O
 
         <div>
           <StageBar p={p} gone={status === "closed" ? p.remaining : 0} labels />
+          {view.incoming.length > 0 && (
+            <ul className="mt-3 grid gap-1 rounded-lg border px-3 py-2 text-sm">
+              {view.incoming.map((i, n) => (
+                <li key={n} className="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <span>
+                    <span className="tnum font-medium">{units(i.units)}</span>{" "}
+                    <span className="text-muted-foreground">{i.basis === "tracking" ? "on the way" : "still to ship"}</span>
+                  </span>
+                  <span className={i.late ? "font-medium text-st-out" : "text-muted-foreground"}>
+                    {i.late ? `${i.daysLate} d late (was due ${formatDay(i.expectedOn)})` : `expected ${formatDay(i.expectedOn)}`}
+                    <span className="font-normal text-muted-foreground"> · {i.basis === "tracking" ? "shipped + 10 d" : "ordered + lead time"}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
           {order.notes && <p className="mt-3 rounded-md bg-muted/50 px-3 py-2 text-sm">{order.notes}</p>}
         </div>
 
@@ -203,7 +220,7 @@ export function OrderDetail({ view, onDeleted, supplierMode = false }: { view: O
                         variant="ghost"
                         size="icon-sm"
                         aria-label={`Remove tracking ${t.number}`}
-                        onClick={() => run((s, a, now) => removeTracking(s, order.id, t.id, a, now), "Tracking removed")}
+                        onClick={() => setRemoveTracking({ id: t.id, label: `${t.carrier} ${t.number} (${units(t.units)} units)` })}
                       >
                         <Trash2Icon />
                       </Button>
@@ -262,6 +279,18 @@ export function OrderDetail({ view, onDeleted, supplierMode = false }: { view: O
         </section>
       </div>
 
+      <Confirm
+        open={!!removeTracking_}
+        onOpenChange={(o) => !o && setRemoveTracking(null)}
+        title="Remove this tracking number?"
+        body={`${removeTracking_?.label ?? ""} will no longer count as on the way. Use this for a number entered by mistake.`}
+        confirm="Remove tracking"
+        destructive
+        onConfirm={() => {
+          const id = removeTracking_?.id;
+          if (id) void run((s, a, now) => removeTracking(s, order.id, id, a, now), "Tracking removed");
+        }}
+      />
       <Confirm
         open={ask === "cancel"}
         onOpenChange={(o) => !o && setAsk(null)}

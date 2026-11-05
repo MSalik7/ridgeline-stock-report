@@ -425,7 +425,7 @@ function DataSetup() {
             <dd className="tnum">{feed.stockSyncedAt ? `${formatMoment(feed.stockSyncedAt)} (${ago(feed.stockSyncedAt, now)})` : "Never"}</dd>
           </div>
         </dl>
-        <Button className="mt-4" onClick={() => run((s, _a, n) => syncFeed(s, n), "Sales and stock synced")}>
+        <Button className="mt-4" onClick={() => run((s, _a, n) => syncFeed(s, n), "Sales and stock synced", { undo: false })}>
           <RefreshCwIcon /> Sync now
         </Button>
       </Panel>

@@ -1,176 +1,104 @@
 import { useState, type ReactNode } from "react";
-import { ArrowDownRightIcon, ArrowRightIcon, ArrowUpRightIcon, PackagePlusIcon, PlusIcon, TruckIcon } from "lucide-react";
+import { ArrowDownRightIcon, ArrowRightIcon, ArrowUpRightIcon, ClipboardCopyIcon, DownloadIcon, PackagePlusIcon, PlusIcon } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { copyStockTable, downloadStockCsv } from "../export";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { daysBetween, formatDay } from "@/domain/dates";
-import type { StockStatus } from "@/domain/forecast";
-import { CHASE_LABEL } from "@/domain/orders";
 import type { ProductRow } from "@/domain/report";
 import { useApp } from "../context";
 import { useDialogs } from "../dialogs/DialogProvider";
-import { StockBadge } from "../components/badges";
+import { STOCK_DOT, StockBadge } from "../components/badges";
 import { CoverageBar, Sparkline } from "../components/charts";
-import { PageHeader, Panel, go } from "../components/bits";
-import { dec1, days as fmtDays, factor, plural, units } from "../format";
+import { PageHeader, go } from "../components/bits";
+import { dec1, factor, units } from "../format";
+import { TodayPanel } from "./TodayPanel";
 
-type Filter = "all" | "attention" | StockStatus;
+type Filter = "all" | "out" | "reorder" | "low" | "gap";
+
+const FILTERS: { value: Filter; label: string; dot?: string; match: (r: ProductRow) => boolean }[] = [
+  { value: "all", label: "All products", match: () => true },
+  { value: "out", label: "Out of stock", dot: STOCK_DOT.out, match: (r) => r.forecast.flags.outOfStock },
+  { value: "reorder", label: "Reorder now", dot: STOCK_DOT.reorder, match: (r) => r.forecast.flags.reorderNow },
+  { value: "low", label: "Running low", dot: STOCK_DOT.urgent, match: (r) => r.forecast.flags.low !== null && !r.forecast.flags.outOfStock },
+  { value: "gap", label: "Runs out before next delivery", dot: "bg-st-out/60", match: (r) => !!r.outlook.runsOutOn },
+];
 
 export function StockView() {
   const { report } = useApp();
   const dialogs = useDialogs();
   const [filter, setFilter] = useState<Filter>("all");
-  const { counts } = report;
-
-  const rows = report.products.filter((r) => {
-    const s = r.forecast.status;
-    if (filter === "all") return true;
-    if (filter === "attention") return s === "out" || s === "reorder" || s === "urgent";
-    if (filter === "urgent") return r.forecast.flags.low !== null && !r.forecast.flags.outOfStock;
-    if (filter === "reorder") return r.forecast.flags.reorderNow;
-    return s === filter;
-  });
-
-  const names = (pred: (r: ProductRow) => boolean) =>
-    report.products
-      .filter(pred)
-      .map((r) => r.product.code)
-      .join(", ");
+  const rule = FILTERS.find((f) => f.value === filter)!;
+  const rows = report.products.filter(rule.match);
 
   return (
     <div className="grid gap-6">
       <PageHeader
         title="Stock"
-        description="What's in the warehouse, how fast it sells, and what to reorder. Worst first."
+        description="What needs doing today, then every product: what's in the warehouse, how fast it sells, and when to reorder."
         actions={
           <>
-            <Button variant="outline" onClick={() => dialogs.arrival()}>
+            <Button variant="outline" onClick={() => dialogs.arrival()} title="Record arrival (A)">
               <PackagePlusIcon /> Record arrival
             </Button>
-            <Button onClick={() => dialogs.newOrder()}>
+            <Button onClick={() => dialogs.newOrder()} title="New order (N)">
               <PlusIcon /> New order
             </Button>
           </>
         }
       />
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
-        <Tile
-          active={filter === "out"}
-          onClick={() => setFilter(filter === "out" ? "all" : "out")}
-          n={counts.out}
-          label="Out of stock"
-          detail={names((r) => r.forecast.flags.outOfStock) || "None"}
-          tone="out"
-        />
-        <Tile
-          active={filter === "reorder"}
-          onClick={() => setFilter(filter === "reorder" ? "all" : "reorder")}
-          n={counts.reorder}
-          label="Reorder now"
-          detail={names((r) => r.forecast.flags.reorderNow) || "Nothing below the reorder line"}
-          tone="reorder"
-        />
-        <Tile
-          active={filter === "urgent"}
-          onClick={() => setFilter(filter === "urgent" ? "all" : "urgent")}
-          n={counts.low}
-          label="Running low"
-          detail={
-            report.products
-              .filter((r) => r.forecast.flags.low && !r.forecast.flags.outOfStock)
-              .map((r) => `${r.product.code} ${r.forecast.flags.low === "urgent" ? "<21d" : "<45d"}`)
-              .join(", ") || "Everything above 45 days"
-          }
-          tone="urgent"
-        />
-        <Tile
-          onClick={() => go("orders-chase")}
-          n={counts.chase}
-          label="Orders to chase"
-          detail={report.chaseDue.map((a) => report.orderById.get(a.orderId)?.order.name).join(", ") || "All suppliers on track"}
-          tone="neutral"
-          link
-        />
-        <Tile
-          onClick={() => go("arrivals")}
-          n={counts.unmatched}
-          label="Unmatched arrivals"
-          detail={report.unmatchedArrivals.map((u) => `${u.arrival.name} (${u.units})`).join(", ") || "Everything matched"}
-          tone="neutral"
-          link
-          className="col-span-2 lg:col-span-1"
-        />
-      </div>
+      <TodayPanel onChaseAll={() => dialogs.chaseAll()} />
 
-      <section className="min-w-0 rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">
-            Products <span className="font-normal text-muted-foreground">· {rows.length} shown</span>
-          </h2>
-          {filter !== "all" && (
-            <Button variant="ghost" size="sm" onClick={() => setFilter("all")}>
-              Show all products
-            </Button>
-          )}
+      <section aria-labelledby="products-title" className="min-w-0 rounded-xl border bg-card">
+        <div className="grid gap-3 border-b px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <h2 id="products-title" className="text-sm font-semibold">
+              Products <span className="font-normal text-muted-foreground">· worst first</span>
+            </h2>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <DownloadIcon /> Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => void downloadStockCsv(report)}>
+                  <DownloadIcon /> Download CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => void copyStockTable(report)}>
+                  <ClipboardCopyIcon /> Copy as table
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filter products">
+            {FILTERS.map((f) => {
+              const n = report.products.filter(f.match).length;
+              const on = filter === f.value;
+              if (f.value !== "all" && n === 0) return null;
+              return (
+                <button
+                  key={f.value}
+                  aria-pressed={on}
+                  onClick={() => setFilter(on && f.value !== "all" ? "all" : f.value)}
+                  className={cn(
+                    "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+                    on ? "border-foreground bg-foreground text-background" : "bg-card text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {f.dot && <span className={cn("size-1.5 rounded-full", f.dot)} />}
+                  {f.label}
+                  <span className={cn("tnum", on ? "text-background/70" : "text-muted-foreground/70")}>{n}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <ProductTable rows={rows} />
         <ProductCards rows={rows} />
       </section>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ChasePanel />
-        <UnmatchedPanel />
-      </div>
     </div>
-  );
-}
-
-function Tile({
-  n,
-  label,
-  detail,
-  tone,
-  onClick,
-  active,
-  link,
-  className,
-}: {
-  n: number;
-  label: string;
-  detail: string;
-  tone: "out" | "reorder" | "urgent" | "neutral";
-  onClick: () => void;
-  active?: boolean;
-  link?: boolean;
-  className?: string;
-}) {
-  const on = n > 0;
-  const color = {
-    out: "text-st-out",
-    reorder: "text-st-reorder",
-    urgent: "text-st-urgent",
-    neutral: "text-foreground",
-  }[tone];
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={link ? undefined : active}
-      className={cn(
-        "group relative flex min-w-0 flex-col items-start gap-0.5 rounded-xl border bg-card p-3 text-left sm:gap-1 sm:p-4 transition-colors hover:bg-accent/60 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
-        active && "border-foreground/40 bg-accent/60",
-        className,
-      )}
-    >
-      <div className="flex w-full items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
-        {label}
-        {link && <ArrowRightIcon className="size-3.5 opacity-0 transition-opacity group-hover:opacity-100" />}
-      </div>
-      <div className={cn("tnum text-2xl font-semibold tracking-tight sm:text-3xl", on ? color : "text-muted-foreground/60")}>{n}</div>
-      <div className="w-full truncate text-xs text-muted-foreground" title={detail}>
-        {detail}
-      </div>
-    </button>
   );
 }
 
@@ -181,7 +109,7 @@ function Trend({ f }: { f: ProductRow["forecast"] }) {
   return (
     <span
       className={cn("inline-flex items-center gap-0.5 text-xs", up ? "text-st-ok" : down ? "text-st-reorder" : "text-muted-foreground")}
-      title={f.rawTrend === null ? "No sales in the prior 4 days, so trend is 1" : `Last 3 days vs prior 4 days`}
+      title={f.rawTrend === null ? "No sales in the prior 4 days, so trend is 1" : "Last 3 days compared with the prior 4 days"}
     >
       <Icon className="size-3.5" />
       {factor(f.trendFactor)}
@@ -189,19 +117,61 @@ function Trend({ f }: { f: ProductRow["forecast"] }) {
   );
 }
 
-function ReorderBy({ r }: { r: ProductRow }) {
+/** "Out" for nothing in the warehouse, otherwise days of stock. */
+export function daysLeft(r: ProductRow) {
+  const f = r.forecast;
+  if (f.flags.outOfStock) return "Out";
+  return f.daysOfStock === null ? "—" : `${dec1(f.daysOfStock)} d`;
+}
+
+/**
+ * The SOP's reorder-by date, worded by what it means for this product.
+ * It only shows as a problem when the product is actually flagged
+ * "Reorder now"; open orders often cover a date that has passed.
+ */
+export function ReorderBy({ r, compact = false }: { r: ProductRow; compact?: boolean }) {
   const { report } = useApp();
-  const d = r.forecast.reorderBy;
-  if (!d) return <span className="text-muted-foreground">—</span>;
+  const f = r.forecast;
+  const d = f.reorderBy;
+  if (!d) return <span className="text-muted-foreground">{compact ? "—" : "No recent sales"}</span>;
   const n = daysBetween(report.today, d);
+  if (f.flags.reorderNow) {
+    return (
+      <div className="text-st-reorder">
+        <div className="tnum font-medium">{f.flags.outOfStock || n <= 0 ? "Now" : formatDay(d)}</div>
+        {!compact && <div className="text-xs">{n < 0 ? `due ${formatDay(d)}, ${-n} d ago` : n === 0 ? "today" : `in ${n} d`}</div>}
+      </div>
+    );
+  }
+  if (n < 0) {
+    return (
+      <div className="text-muted-foreground">
+        <div>Covered</div>
+        {!compact && <div className="text-xs">by open orders</div>}
+      </div>
+    );
+  }
   return (
     <div>
       <div className="tnum">{formatDay(d)}</div>
-      <div className={cn("text-xs", n < 0 ? "text-st-reorder" : "text-muted-foreground")}>
-        {n < 0 ? `${-n} d overdue` : n === 0 ? "today" : `in ${n} d`}
-      </div>
+      {!compact && <div className="text-xs text-muted-foreground">in {n} d</div>}
     </div>
   );
+}
+
+/** Red note when stock runs out before the next delivery lands. */
+export function GapNote({ r, className }: { r: ProductRow; className?: string }) {
+  const { report } = useApp();
+  const o = r.outlook;
+  if (!o.runsOutOn) return null;
+  const g = o.gaps[0];
+  const from = o.runsOutOn <= report.today ? "Out now" : `Out ${formatDay(o.runsOutOn)}`;
+  const text = !o.nextStock
+    ? `${from}, nothing due`
+    : o.nextStock.late
+      ? `${from}, ${o.nextStock.orderName} ${o.nextStock.daysLate} d late`
+      : `${from}–${formatDay(o.nextStock.expectedOn)}${g.days ? ` (${g.days} d)` : ""}`;
+  return <div className={cn("text-xs font-medium text-st-out", className)}>{text}</div>;
 }
 
 function last14(r: ProductRow, today: string) {
@@ -223,13 +193,13 @@ function ProductTable({ rows }: { rows: ProductRow[] }) {
           <tr className="border-b text-left text-xs text-muted-foreground [&>th]:px-3 [&>th]:py-2.5 [&>th]:font-medium">
             <th className="pl-4">Product</th>
             <th>Status</th>
-            <th className="text-right">In warehouse</th>
-            <th className="text-right">Not shipped</th>
-            <th>Sells per day</th>
-            <th className="min-w-36">Days of stock</th>
-            <th className="text-right">On order</th>
+            <th className="text-right" title="Physical units in the warehouse now">In warehouse</th>
+            <th className="text-right" title="Sold to customers, not yet shipped">Not shipped</th>
+            <th title="Adjusted burn: last 7 days, weighted by the last-3 vs prior-4 trend">Sells per day</th>
+            <th className="min-w-40" title="Warehouse stock divided by sales per day">Days of stock</th>
+            <th className="text-right" title="Placed + in production + on the way, and the days of stock counting them">On order</th>
             <th>Reorder by</th>
-            <th className="pr-4 text-right">Suggested</th>
+            <th className="pr-4 text-right" title="(target + lead time) × sales per day − warehouse stock">Suggested</th>
           </tr>
         </thead>
         <tbody>
@@ -249,9 +219,9 @@ function ProductTable({ rows }: { rows: ProductRow[] }) {
                 </td>
                 <td>
                   <StockBadge status={f.status} />
-                  {f.flags.orderedNotEnough && <div className="mt-1 text-[11px] text-st-reorder">Even with orders</div>}
+                  {f.flags.orderedNotEnough && <div className="mt-1 text-[11px] text-st-reorder">Even with open orders</div>}
                 </td>
-                <td className="tnum text-right font-medium">{units(r.stock)}</td>
+                <td className={cn("tnum text-right font-medium", f.flags.outOfStock && "text-st-out")}>{units(r.stock)}</td>
                 <td className="tnum text-right text-muted-foreground">{units(r.unshipped)}</td>
                 <td>
                   <div className="flex items-center gap-2">
@@ -259,20 +229,24 @@ function ProductTable({ rows }: { rows: ProductRow[] }) {
                       <div className="tnum font-medium">{dec1(f.adjustedBurn)}</div>
                       <Trend f={f} />
                     </div>
-                    <Sparkline values={last14(r, report.today)} className="hidden xl:block" />
+                    <Sparkline values={last14(r, report.today)} className="hidden 2xl:block" />
                   </div>
                 </td>
                 <td>
-                  <div className="tnum font-medium">{fmtDays(f.daysOfStock)}</div>
-                  <div className="text-xs text-muted-foreground">{f.sellsOutOn ? `Sells out ${formatDay(f.sellsOutOn)}` : "No recent sales"}</div>
-                  <div className="mt-1.5 w-32">
+                  <div className={cn("tnum font-medium", f.flags.outOfStock && "text-st-out")}>{daysLeft(r)}</div>
+                  {r.outlook.runsOutOn ? (
+                    <GapNote r={r} />
+                  ) : (
+                    <div className="text-xs text-muted-foreground">{f.sellsOutOn ? `Sells out ${formatDay(f.sellsOutOn)}` : "No recent sales"}</div>
+                  )}
+                  <div className="mt-1.5 w-36">
                     <CoverageBar f={f} compact />
                   </div>
                 </td>
                 <td className="text-right">
                   <div className="tnum">{units(f.onOrder)}</div>
                   <div className={cn("tnum text-xs", f.flags.reorderNow ? "text-st-reorder" : "text-muted-foreground")}>
-                    {fmtDays(f.daysWithOrdered)} total
+                    {f.daysWithOrdered === null ? "—" : `${dec1(f.daysWithOrdered)} d total`}
                   </div>
                 </td>
                 <td>
@@ -305,17 +279,20 @@ function ProductCards({ rows }: { rows: ProductRow[] }) {
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
                 <Mini label="In warehouse" value={units(r.stock)} />
-                <Mini label="Days left" value={fmtDays(f.daysOfStock)} />
+                <Mini label="Days left" value={<span className={cn(f.flags.outOfStock && "text-st-out")}>{daysLeft(r)}</span>} />
                 <Mini label="Sells/day" value={<>{dec1(f.adjustedBurn)} <Trend f={f} /></>} />
               </div>
               <div className="mt-3">
                 <CoverageBar f={f} compact />
               </div>
+              <GapNote r={r} className="mt-2" />
               <div className="mt-2 flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
                 <span className={cn(f.flags.reorderNow && "text-st-reorder")}>
-                  {units(f.onOrder)} on order · {fmtDays(f.daysWithOrdered)} total
+                  {units(f.onOrder)} on order · {f.daysWithOrdered === null ? "—" : `${dec1(f.daysWithOrdered)} d`} total
                 </span>
-                {f.reorderBy && <span>Reorder by {formatDay(f.reorderBy)}</span>}
+                <span className="flex items-center gap-1">
+                  Reorder by <ReorderBy r={r} compact />
+                </span>
               </div>
               <div className="mt-1 flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
                 <span>{units(r.unshipped)} sold, not shipped</span>
@@ -335,97 +312,5 @@ function Mini({ label, value }: { label: string; value: ReactNode }) {
       <div>{label}</div>
       <div className="tnum mt-0.5 text-sm font-semibold text-foreground">{value}</div>
     </div>
-  );
-}
-
-function ChasePanel() {
-  const { report } = useApp();
-  const dialogs = useDialogs();
-  return (
-    <Panel
-      title={<>Supplier orders to chase</>}
-      description="Follow-ups repeat at most every 2 days while the reason still applies."
-      action={
-        <Button variant="ghost" size="sm" asChild>
-          <a href="#orders-chase">All</a>
-        </Button>
-      }
-      bodyClassName="p-0"
-    >
-      {report.chaseDue.length === 0 && report.chaseWaiting.length === 0 && (
-        <p className="p-4 text-sm text-muted-foreground">No supplier order needs chasing.</p>
-      )}
-      <ul className="divide-y">
-        {report.chaseDue.map((a) => {
-          const o = report.orderById.get(a.orderId)!;
-          return (
-            <li key={`${a.orderId}-${a.kind}`} className="flex items-center gap-3 px-4 py-3">
-              <TruckIcon className="size-4 shrink-0 text-st-reorder" />
-              <div className="min-w-0 flex-1">
-                <div className="text-sm">
-                  <a className="font-mono font-medium hover:underline" href={`#order-${a.orderId}`}>
-                    {o.order.name}
-                  </a>{" "}
-                  <span className="text-muted-foreground">· {o.supplier?.name}</span>
-                </div>
-                <div className="text-xs text-muted-foreground">{a.reason}</div>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => dialogs.chase(a.orderId, a.kind)}>
-                {CHASE_LABEL[a.kind]}
-              </Button>
-            </li>
-          );
-        })}
-        {report.chaseWaiting.map((a) => {
-          const o = report.orderById.get(a.orderId)!;
-          return (
-            <li key={`${a.orderId}-${a.kind}-w`} className="flex items-center gap-3 px-4 py-3 text-muted-foreground">
-              <TruckIcon className="size-4 shrink-0" />
-              <div className="min-w-0 flex-1 text-sm">
-                <a className="font-mono font-medium text-foreground hover:underline" href={`#order-${a.orderId}`}>
-                  {o.order.name}
-                </a>{" "}
-                · {CHASE_LABEL[a.kind]} sent, due again {a.nextDueOn ? formatDay(a.nextDueOn) : "soon"}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </Panel>
-  );
-}
-
-function UnmatchedPanel() {
-  const { report, data } = useApp();
-  const dialogs = useDialogs();
-  return (
-    <Panel
-      title="Arrivals not matched to an order"
-      description="Units in stock that no supplier order explains. Match them or mark them as not from an order."
-      bodyClassName="p-0"
-    >
-      {report.unmatchedArrivals.length === 0 && <p className="p-4 text-sm text-muted-foreground">Every arrival is matched.</p>}
-      <ul className="divide-y">
-        {report.unmatchedArrivals.map(({ arrival, units: n }) => {
-          const p = data.products.find((x) => x.id === arrival.productId);
-          return (
-            <li key={arrival.id} className="flex items-center gap-3 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <div className="text-sm">
-                  <span className="font-mono font-medium">{arrival.name}</span> · {p?.name}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {plural(n, "unit")} unmatched · received {formatDay(arrival.receivedOn)}
-                  {arrival.note ? ` · ${arrival.note}` : ""}
-                </div>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => dialogs.match(arrival.id)}>
-                Match
-              </Button>
-            </li>
-          );
-        })}
-      </ul>
-    </Panel>
   );
 }

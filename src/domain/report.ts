@@ -11,6 +11,7 @@ import {
   type OrderProgress,
   type OrderStatus,
 } from "./orders";
+import { buildOutlook, incomingForOrder, type Incoming, type Outlook } from "./outlook";
 import { unitsSoldByDay, unmatchedSkus, unshippedUnits } from "./sales";
 import { warehouseStock } from "./stock";
 import type { AppState, Arrival, Product, StoreDate, Supplier, SupplierOrder } from "./types";
@@ -23,6 +24,8 @@ export interface OrderView {
   status: OrderStatus;
   open: boolean;
   alerts: ChaseAlert[];
+  /** Units still to come and when they should land (open orders only). */
+  incoming: Incoming[];
 }
 
 export interface ProductRow {
@@ -35,6 +38,8 @@ export interface ProductRow {
   onTheWay: number;
   openOrders: OrderView[];
   forecast: Forecast;
+  /** When open orders land and whether stock runs out first. */
+  outlook: Outlook;
   /** Units sold per store day, all days on record. */
   sales: Map<StoreDate, number>;
 }
@@ -60,18 +65,22 @@ export function buildReport(state: AppState, now: Date): Report {
   const productById = new Map(state.products.map((p) => [p.id, p]));
   const supplierById = new Map(state.suppliers.map((s) => [s.id, s]));
   const arrived = arrivalsByOrder(state.arrivals);
+  const settingsOf = new Map(state.products.map((p) => [p.id, effectiveSettings(state.settings.forecast, p)]));
 
   const orders: OrderView[] = state.orders.map((order) => {
     const progress = orderProgress(order, arrived.get(order.id));
     const status = orderStatus(order, progress);
+    const open = isOpenStatus(status);
+    const lead = (settingsOf.get(order.productId) ?? state.settings.forecast).leadTimeDays;
     return {
       order,
       product: productById.get(order.productId),
       supplier: supplierById.get(order.supplierId),
       progress,
       status,
-      open: isOpenStatus(status),
+      open,
       alerts: chaseAlerts(order, progress, status, today),
+      incoming: open ? incomingForOrder(order, progress, lead, today) : [],
     };
   });
   orders.sort((a, b) => b.order.orderedOn.localeCompare(a.order.orderedOn) || b.order.name.localeCompare(a.order.name));
@@ -90,7 +99,14 @@ export function buildReport(state: AppState, now: Date): Report {
       placed,
       inProduction,
       onTheWay,
-      settings: effectiveSettings(state.settings.forecast, product),
+      settings: settingsOf.get(product.id)!,
+    });
+    const outlook = buildOutlook({
+      stock,
+      burn: forecast.adjustedBurn,
+      incoming: openOrders.flatMap((o) => o.incoming),
+      today,
+      minHorizon: forecast.reorderLine,
     });
     return {
       product,
@@ -102,6 +118,7 @@ export function buildReport(state: AppState, now: Date): Report {
       onTheWay,
       openOrders,
       forecast,
+      outlook,
       sales,
     };
   });

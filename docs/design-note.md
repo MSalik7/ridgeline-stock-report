@@ -8,8 +8,8 @@ Demo: https://claude.ai/artifact/HwDgKgZ3mbvkBPokdmaXU9 · Code: this repo · Ru
 
 | Screen | Answers | What's on it |
 |---|---|---|
-| **Stock** (home) | Q1–Q5, Q8, Q9 | Five tiles that double as filters: out of stock, reorder now, running low, orders to chase, unmatched arrivals. Below them, every product sorted worst first, showing warehouse stock, sold-not-shipped, sales per day with trend, days of stock with a runway bar, units on order, reorder-by date and suggested order. |
-| **Product** | Q3–Q6 | One callout per flag, written as a sentence ("Reorder now, even counting open orders…"). **Try an order** updates the days of stock as you type, with a runway bar marked at the reorder line and the target. A 30-day sales chart shades the exact 7-day window, split into the prior 4 and last 3 days that the trend factor compares. **How the numbers are worked out** shows every formula with this product's real values. |
+| **Stock** (home) | Q1–Q5, Q8, Q9 | **To do today** first: a ranked list (reorders, follow-ups, stock that runs out before the next delivery, unmatched arrivals), each item with the one button that resolves it, plus "Waiting on suppliers" and "Done today". Below it, every product sorted worst first, with filters: warehouse stock, sold-not-shipped, sales per day with trend, days of stock with a runway bar, units on order, reorder-by and suggested order. |
+| **Product** | Q3–Q6 | One callout per flag, written as a sentence ("Reorder now, even counting open orders…"). **Stock outlook** charts past stock, the projection at today's pace, when each open order should land, and red bands where there'd be nothing to sell. **Try an order** updates the days of stock as you type, with a runway bar marked at the reorder line and the target. A 30-day sales chart shades the exact 7-day window, split into the prior 4 and last 3 days that the trend factor compares. **How the numbers are worked out** shows every formula with this product's real values. |
 | **Supplier orders** | Q7, Q8 | Filter by product and stage. Each order's stage bar shows where its units are: arrived, on the way, in production, placed, or not coming. The detail panel holds every action (confirm, tracking, arrival, edit, close, cancel, reopen, delete with confirmation), tracking linked to the carrier, the order message, follow-ups, and a who/what/when history. |
 | **Arrivals** | Q9 | Unmatched arrivals pinned at the top. Recording an arrival previews the oldest-first match before you save. Hand matching splits units across orders or marks them "not from an order". |
 | **Stock history** | Q10 | A ledger per product: count, arrivals, moves between orders, manual sales and adjustments, and daily shipments. Each line shows the change, the stock after it, why, and who. |
@@ -17,6 +17,10 @@ Demo: https://claude.ai/artifact/HwDgKgZ3mbvkBPokdmaXU9 · Code: this repo · Ru
 | **Supplier portal** | supplier | Only that supplier's orders. Only two actions: confirm, add tracking. |
 
 **Phone (390 px):** tables become cards, navigation moves to a bottom tab bar, and dialogs and panels go full width. Nothing scrolls sideways.
+
+**Speed and safety:** every action's toast offers **Undo**, which restores exactly the records it changed. **Ctrl/Cmd+K** (or /) searches products, orders, arrivals and actions. N, A and L open a new order, an arrival and a stock change. The stock report exports as CSV or copies as a table for email or chat. "Follow up on all" prepares every due chase message at once.
+
+**Timing, on top of the SOP.** "Days with everything ordered" counts ordered units as if they were already on the shelf. So each open order also gets an expected arrival: tracked units land 10 days after shipping (the same 10 days the chase rule uses); everything else lands at order date + lead time. A day-by-day projection then shows whether stock runs out before the order lands. In the demo, the grinder runs out 26 days before its order arrives, which no SOP number shows. None of the SOP numbers change.
 
 **Structure.** `src/domain` is plain TypeScript with no UI, and each rule lives there once. The UI calls a single `run()` for every action. `run()` executes a pure mutation that returns a `ChangeSet`, then saves it to whichever store is active. Shared visual parts are also written once and reused: `StageBar` (orders list, order panel, product page, supplier portal) and `CoverageBar` (table, cards, try an order, new-order dialog).
 
@@ -51,7 +55,7 @@ So no stored number can drift from its source, and changing a rule means changin
 
 ## 3. How I checked the numbers against section 4
 
-- **44 unit tests** (`src/domain/rules.test.ts`). Each test name carries the hand calculation. For example, with sales of 10, 10, 10, 10, 14, 14, 14:
+- **82 tests in total.** **44 unit tests** (`src/domain/rules.test.ts`). Each test name carries the hand calculation. For example, with sales of 10, 10, 10, 10, 14, 14, 14:
   - trend = (42/3)/(40/4) = 1.4
   - adjusted burn = 11.714 × 1.4 = 16.4
   - suggested order = (60+45) × 16.4 − 500 = 1222
@@ -65,6 +69,7 @@ So no stored number can drift from its source, and changing a rule means changin
   - all three chase rules at their exact boundaries (2 vs 1 day, 10 vs 9 days, more than 10 vs 10), plus the 2-day repeat
   - oldest-first matching and spill-over, bundles and sold-not-shipped
   - the Denver day boundary and the DST change
+- **9 outlook and to-do tests**: the projection's run-out day matches the SOP's "sells out on", plus arrival estimates and the ranking. **4 undo tests** check that applying an action and then its undo gives back identical data.
 - **25 demo-data tests** generate the business on four different dates, including summer time. They assert that every flag, stage and chase type appears and that stock never goes negative. They also check that syncing four days later keeps every forecast live.
 - **In the app**, each product page shows its working ("93 ÷ 7 = 13.3", "(49 ÷ 3) ÷ (44 ÷ 4) = 1.48"), so anyone can re-check by hand.
 

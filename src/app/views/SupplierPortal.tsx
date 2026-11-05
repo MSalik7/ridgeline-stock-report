@@ -29,9 +29,8 @@ export function SupplierPortal() {
   return (
     <div className="grid gap-6">
       <PageHeader
-        eyebrow="Supplier portal"
         title={supplier.name}
-        description={`Orders from ${data.settings.storeName}. Confirm new orders and add tracking numbers when units ship.`}
+        description={`Your orders from ${data.settings.storeName}. Confirm new orders and add tracking numbers when units ship.`}
       />
       <div className="grid grid-cols-3 gap-3">
         <PortalStat label="Open orders" value={open.length} />

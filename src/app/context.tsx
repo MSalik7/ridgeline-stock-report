@@ -4,6 +4,7 @@ import { ActionError } from "@/domain/mutations";
 import { buildReport, type Report } from "@/domain/report";
 import type { Actor, AppState, ChangeSet, Role } from "@/domain/types";
 import { commit, ReadOnlyError, useStore, type StoreState } from "./store";
+import { inverseOf } from "@/data/apply";
 import { AppContext as Ctx } from "./ctx";
 
 const ROLE_KEY = "ridgeline-stock:role";
@@ -25,7 +26,11 @@ export interface AppCtx {
    * Runs a mutation and saves it. Shows the problem as a toast and returns
    * false when the action isn't allowed, so dialogs can stay open.
    */
-  run: (make: (s: AppState, actor: Actor, now: Date) => ChangeSet, success?: string) => Promise<boolean>;
+  run: (
+    make: (s: AppState, actor: Actor, now: Date) => ChangeSet,
+    success?: string,
+    opts?: { undo?: boolean },
+  ) => Promise<boolean>;
 }
 
 
@@ -75,12 +80,28 @@ export function AppProvider({ children, fallback }: { children: ReactNode; fallb
   const report = useMemo(() => (store.data ? buildReport(store.data, now) : null), [store.data, now]);
 
   const run = useCallback<AppCtx["run"]>(
-    async (make, success) => {
+    async (make, success, opts) => {
       if (!store.data) return false;
       try {
         const changes = make(store.data, actor, new Date());
+        const undo = inverseOf(store.data, changes);
         await commit(changes);
-        if (success) toast.success(success);
+        if (success) {
+          const canUndo = opts?.undo !== false && changes.put.length + changes.remove.length + changes.config.length > 0;
+          toast.success(success, {
+            duration: canUndo ? 8000 : 4000,
+            action: canUndo
+              ? {
+                  label: "Undo",
+                  onClick: () => {
+                    commit(undo)
+                      .then(() => toast("Undone"))
+                      .catch((e: Error) => toast.error(e.message));
+                  },
+                }
+              : undefined,
+          });
+        }
         return true;
       } catch (e) {
         if (e instanceof ActionError || e instanceof ReadOnlyError) toast.error(e.message);

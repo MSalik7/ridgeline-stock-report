@@ -30,3 +30,29 @@ export function applyChanges(state: AppState, changes: ChangeSet): AppState {
   }
   return next;
 }
+
+/**
+ * The ChangeSet that puts back everything `changes` would alter, computed
+ * from the state before it is applied. Powers "Undo" on every action.
+ */
+export function inverseOf(state: AppState, changes: ChangeSet): ChangeSet {
+  const inv: ChangeSet = { put: [], remove: [], config: [] };
+  const seen = new Set<string>();
+  const keyOf = (c: CollectionName, x: { id?: string; date?: string }) => (c === "sales" ? x.date : x.id);
+  const restore = (collection: CollectionName, id: string) => {
+    const k = `${collection}/${id}`;
+    if (seen.has(k)) return;
+    seen.add(k);
+    const before = (state[collection] as { id?: string; date?: string }[]).find((x) => keyOf(collection, x) === id);
+    if (before) inv.put.push({ collection, id, data: before });
+    else inv.remove.push({ collection, id });
+  };
+  for (const p of changes.put) restore(p.collection, p.id);
+  for (const r of changes.remove) restore(r.collection, r.id);
+  for (const c of changes.config) {
+    if (seen.has(`config/${c.doc}`)) continue;
+    seen.add(`config/${c.doc}`);
+    inv.config.push({ doc: c.doc, data: c.doc === "settings" ? state.settings : state.feed });
+  }
+  return inv;
+}

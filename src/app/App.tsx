@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeftRightIcon,
   BoxesIcon,
@@ -9,6 +9,7 @@ import {
   MenuIcon,
   PackageCheckIcon,
   RefreshCwIcon,
+  SearchIcon,
   Settings2Icon,
   TriangleAlertIcon,
   TruckIcon,
@@ -37,6 +38,8 @@ import { HistoryView } from "./views/HistoryView";
 import { MessagesView } from "./views/MessagesView";
 import { SetupView } from "./views/SetupView";
 import { SupplierPortal } from "./views/SupplierPortal";
+import { CommandPalette } from "./CommandPalette";
+import { useDialogs, type Dialogs } from "./dialogs/DialogProvider";
 
 function useHash() {
   const read = () => window.location.hash.replace(/^#/, "");
@@ -68,6 +71,8 @@ export function App() {
   const { viewer } = useApp();
   const supplier = viewer.role === "supplier";
   const section = sectionOf(route);
+  const [palette, setPalette] = useState(false);
+  useShortcuts(!supplier, setPalette);
 
   let page: ReactNode;
   if (supplier) page = <SupplierPortal />;
@@ -83,7 +88,7 @@ export function App() {
     <div className="min-h-full lg:grid lg:grid-cols-[15rem_1fr]">
       <Sidebar section={section} supplier={supplier} />
       <div className="flex min-w-0 flex-col">
-        <MobileTopBar />
+        <MobileTopBar onSearch={supplier ? undefined : () => setPalette(true)} />
         <main className="mx-auto w-full max-w-[90rem] min-w-0 flex-1 pl-[max(16px,env(safe-area-inset-left,0px))] pr-[max(16px,env(safe-area-inset-right,0px))] pt-4 pb-28 sm:pt-6 lg:px-8 lg:pb-12">
           <div className="grid gap-4">
             <StaleBanner />
@@ -93,8 +98,43 @@ export function App() {
         </main>
       </div>
       {!supplier && <BottomNav section={section} />}
+      {!supplier && <CommandPalette open={palette} onOpenChange={setPalette} />}
     </div>
   );
+}
+
+const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+/**
+ * Keyboard: Ctrl/Cmd+K or / opens search; N new order, A arrival, L log change.
+ * Single keys are ignored while typing or while a dialog is open.
+ */
+function useShortcuts(enabled: boolean, setPalette: (f: (o: boolean) => boolean) => void) {
+  const dialogs = useDialogs();
+  const ref = useRef<Dialogs>(dialogs);
+  ref.current = dialogs;
+  useEffect(() => {
+    if (!enabled) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPalette((o) => !o);
+        return;
+      }
+      const t = e.target as HTMLElement | null;
+      if (e.metaKey || e.ctrlKey || e.altKey || t?.closest("input, textarea, select, [contenteditable=true]")) return;
+      if (document.querySelector("[role=dialog], [role=alertdialog], [role=menu]")) return;
+      const k = e.key.toLowerCase();
+      if (k === "/") setPalette(() => true);
+      else if (k === "n") ref.current.newOrder();
+      else if (k === "a") ref.current.arrival();
+      else if (k === "l") ref.current.stockChange();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [enabled, setPalette]);
 }
 
 // ---------------------------------------------------------------- nav
@@ -230,18 +270,33 @@ function BottomNav({ section }: { section: Section }) {
   );
 }
 
-function MobileTopBar() {
+function MobileTopBar({ onSearch }: { onSearch?: () => void }) {
   const { now, report } = useApp();
   return (
     <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 flex h-14 items-center justify-between gap-3 border-b bg-background/95 pl-[max(16px,env(safe-area-inset-left,0px))] pr-[max(16px,env(safe-area-inset-right,0px))] backdrop-blur lg:static lg:h-12 lg:bg-transparent lg:px-8 lg:backdrop-blur-none">
       <div className="lg:hidden">
         <Brand />
       </div>
+      {onSearch && (
+        <button
+          onClick={onSearch}
+          className="hidden h-9 w-80 items-center gap-2 rounded-lg border bg-card px-3 text-sm text-muted-foreground shadow-xs transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none lg:flex"
+        >
+          <SearchIcon className="size-4" />
+          <span className="flex-1 text-left">Search products, orders, actions</span>
+          <kbd className="rounded border bg-muted px-1.5 font-mono text-[11px]">{isMac ? "⌘K" : "Ctrl K"}</kbd>
+        </button>
+      )}
       <div className="tnum ml-auto text-right text-xs text-muted-foreground" title="All day counts use store time, America/Denver">
         <span className="hidden sm:inline">{formatWeekday(report.today)} · </span>
         {formatStoreClock(now)}
         <span className="hidden sm:inline"> · Denver store time</span>
       </div>
+      {onSearch && (
+        <Button variant="ghost" size="icon" className="-mr-2 lg:hidden" aria-label="Search products, orders and actions" onClick={onSearch}>
+          <SearchIcon />
+        </Button>
+      )}
     </header>
   );
 }
@@ -266,7 +321,7 @@ function SyncStatus() {
         disabled={busy}
         onClick={async () => {
           setBusy(true);
-          await run((s, _a, n) => syncFeed(s, n), "Sales and stock synced");
+          await run((s, _a, n) => syncFeed(s, n), "Sales and stock synced", { undo: false });
           setBusy(false);
         }}
       >
@@ -335,7 +390,7 @@ function StaleBanner() {
           {last ? `Last synced ${ago(last, now)}.` : "Never synced."} Forecasts only use what's here, so recent days may be missing.
         </span>
       </p>
-      <Button size="sm" onClick={() => run((s, _a, n) => syncFeed(s, n), "Sales and stock synced")}>
+      <Button size="sm" onClick={() => run((s, _a, n) => syncFeed(s, n), "Sales and stock synced", { undo: false })}>
         <RefreshCwIcon /> Sync now
       </Button>
     </div>

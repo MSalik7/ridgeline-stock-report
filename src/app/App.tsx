@@ -220,9 +220,10 @@ function useNav() {
 }
 
 function Brand({ compact = false }: { compact?: boolean }) {
-  const { data } = useApp();
+  const { data, viewer } = useApp();
+  const subtitle = viewer.role === "supplier" ? "Supplier portal" : "Stock report";
   return (
-    <a href="#stock" className="flex items-center gap-2.5" aria-label={compact ? `${data.settings.storeName}, stock report` : undefined}>
+    <a href="#stock" className="flex items-center gap-2.5" aria-label={compact ? `${data.settings.storeName}, ${subtitle.toLowerCase()}` : undefined}>
       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-foreground text-background">
         <svg viewBox="0 0 24 24" className="size-4" aria-hidden>
           <path d="M3 18 9 9l4 5 3-4 5 8z" fill="currentColor" />
@@ -230,7 +231,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
       </span>
       <span className={cn("min-w-0 leading-tight whitespace-nowrap transition-opacity duration-200", compact && "opacity-0")} aria-hidden={compact || undefined}>
         <span className="block truncate text-sm font-semibold">{data.settings.storeName}</span>
-        <span className="block text-xs text-muted-foreground">Stock report</span>
+        <span className="block text-xs text-muted-foreground">{subtitle}</span>
       </span>
     </a>
   );
@@ -295,8 +296,8 @@ function Sidebar({ section, supplier, collapsed, onToggle }: { section: Section;
               ))
             )}
           </nav>
-          <div className={cn("mt-auto grid border-t", collapsed ? "gap-1 px-2 py-3" : "gap-3 p-3")}>
-            <SyncStatus compact={collapsed} />
+          <div className={cn("mt-auto grid grid-cols-1 border-t", collapsed ? "gap-1 px-2 py-3" : "gap-3 p-3")}>
+            {!supplier && <SyncStatus compact={collapsed} />}
             <RoleSwitcher compact={collapsed} />
           </div>
         </div>
@@ -417,7 +418,7 @@ function BottomNav({ section }: { section: Section }) {
             <SheetTitle>More</SheetTitle>
             <SheetDescription>History, messages, setup, data and who you're viewing as.</SheetDescription>
           </SheetHeader>
-          <div className="grid gap-3 px-4">
+          <div className="grid grid-cols-1 gap-3 px-4">
             <div className="grid gap-1">
               {extra.map((n) => (
                 <a key={n.id} href={n.href} onClick={() => setMore(false)} className="flex h-11 items-center gap-3 rounded-md px-2 text-sm hover:bg-accent">
@@ -457,6 +458,11 @@ function MobileTopBar({ onSearch, staff }: { onSearch?: () => void; staff: boole
           <span className="hidden md:inline"> · Denver store time</span>
         </div>
         {staff && <ActivityBell />}
+        {!staff && (
+          <div className="lg:hidden">
+            <RoleSwitcher inBar />
+          </div>
+        )}
         <ThemeToggle />
         {onSearch && (
           <Button variant="ghost" size="icon" className="-mr-2 lg:hidden" aria-label="Search products, orders and actions" onClick={onSearch}>
@@ -510,8 +516,9 @@ function SyncStatus({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function RoleSwitcher({ compact = false }: { compact?: boolean }) {
+function RoleSwitcher({ compact = false, inBar = false }: { compact?: boolean; inBar?: boolean }) {
   const { viewer, setViewer, data, store } = useApp();
+  const iconOnly = compact || inBar;
   const value = viewer.role === "supplier" ? `supplier:${viewer.supplierId}` : "staff";
   const label =
     viewer.role === "supplier" ? data.suppliers.find((s) => s.id === viewer.supplierId)?.name ?? "Supplier" : "Operations staff";
@@ -520,20 +527,21 @@ function RoleSwitcher({ compact = false }: { compact?: boolean }) {
       <RailTip show={compact} label={`Viewing as ${label}`}>
         <DropdownMenuTrigger asChild>
           <button
-            aria-label={compact ? `Viewing as ${label}. Switch` : undefined}
+            aria-label={iconOnly ? `Viewing as ${label}. Switch` : undefined}
+            title={inBar ? `Viewing as ${label}` : undefined}
             className={cn(
-              "flex items-center gap-2.5 rounded-lg py-1.5 text-left hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
-              compact ? "w-10 justify-center px-0" : "w-full px-2",
+              "flex min-w-0 items-center gap-2.5 rounded-lg text-left hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+              compact ? "w-10 justify-center px-0 py-1.5" : inBar ? "rounded-full p-0.5" : "w-full px-2 py-1.5",
             )}
           >
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
               {store.mode === "shared" ? <CloudIcon className="size-4" /> : <HardDriveIcon className="size-4" />}
             </span>
-            {!compact && (
+            {!iconOnly && (
               <>
-                <span className="min-w-0 flex-1 leading-tight">
+                <span className="min-w-0 flex-1 leading-tight" title={label}>
                   <span className="block text-[11px] text-muted-foreground">Viewing as</span>
-                  <span className="block truncate text-sm font-medium">{label}</span>
+                  <span className="line-clamp-2 text-sm leading-snug font-medium break-words">{label}</span>
                 </span>
                 <ArrowLeftRightIcon className="size-4 text-muted-foreground" />
               </>
@@ -541,7 +549,7 @@ function RoleSwitcher({ compact = false }: { compact?: boolean }) {
           </button>
         </DropdownMenuTrigger>
       </RailTip>
-      <DropdownMenuContent align={compact ? "end" : "start"} side={compact ? "right" : undefined} className="w-64">
+      <DropdownMenuContent align={iconOnly ? "end" : "start"} side={compact ? "right" : undefined} className="w-64">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
           Demo sign-in. Pick who you are; a real deployment would use accounts.
         </DropdownMenuLabel>

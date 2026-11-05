@@ -41,7 +41,7 @@ export function TodayPanel({ onChaseAll }: { onChaseAll: () => void }) {
 
   return (
     <section aria-labelledby="today-title" className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className="min-w-0 rounded-xl border bg-card">
+      <div className="min-w-0 rounded-xl border surface">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
           <h2 id="today-title" className="text-sm font-semibold">
             To do today{" "}
@@ -126,7 +126,7 @@ function Waiting() {
   const { report } = useApp();
   if (!report.chaseWaiting.length) return null;
   return (
-    <div className="rounded-xl border bg-card">
+    <div className="rounded-xl border surface">
       <h3 className="flex items-center gap-2 border-b px-4 py-3 text-sm font-semibold">
         <ClockIcon className="size-4 text-muted-foreground" /> Waiting on suppliers
       </h3>
@@ -152,7 +152,7 @@ function Waiting() {
 function Done({ items }: { items: ReturnType<typeof doneToday> }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-xl border bg-card">
+    <div className="rounded-xl border surface">
       <button
         className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-semibold focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
         aria-expanded={open}

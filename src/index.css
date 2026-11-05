@@ -70,12 +70,25 @@
   --sg-arrived: oklch(0.62 0.13 160);
 
   /* Coffee backdrop: caramel, espresso and crema glows, beans and steam. */
-  --brew-caramel: oklch(0.78 0.1 65 / 0.38);
-  --brew-espresso: oklch(0.6 0.07 45 / 0.2);
-  --brew-crema: oklch(0.92 0.06 85 / 0.6);
-  --bean: oklch(0.45 0.07 45 / 0.7);
-  --bean-crease: oklch(0.3 0.05 40 / 0.75);
-  --steam: oklch(0.78 0.03 70 / 0.65);
+  --brew-base: linear-gradient(160deg, oklch(0.968 0.024 76), oklch(0.985 0.01 84) 46%, oklch(0.955 0.028 62));
+  --brew-caramel: oklch(0.8 0.12 66 / 0.6);
+  --brew-espresso: oklch(0.56 0.09 45 / 0.34);
+  --brew-crema: oklch(0.94 0.07 86 / 0.8);
+  --brew-mocha: oklch(0.72 0.09 38 / 0.34);
+  --bean: oklch(0.42 0.08 45);
+  --bean-crease: oklch(0.26 0.05 38);
+  --steam: oklch(0.6 0.04 60 / 0.42);
+  --cup-saucer: oklch(0.992 0.006 80);
+  --cup-ceramic: oklch(1 0 0);
+  --cup-shadow: oklch(0.45 0.06 50 / 0.16);
+  --cup-coffee: oklch(0.64 0.095 60);
+  --cup-coffee-edge: oklch(0.4 0.08 44);
+  --cup-crema: oklch(0.68 0.12 62);
+  --cup-foam: oklch(0.97 0.025 85);
+  --cup-alpha: 0.9;
+  --grain-alpha: 0.32;
+  /* Frosted panels: the coffee scene shows through, blurred. */
+  --surface: oklch(1 0 0 / 0.7);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -119,12 +132,24 @@
     --sg-production: oklch(0.68 0.12 295);
     --sg-transit: oklch(0.7 0.12 245);
     --sg-arrived: oklch(0.72 0.12 160);
-    --brew-caramel: oklch(0.55 0.11 60 / 0.3);
-    --brew-espresso: oklch(0.42 0.08 45 / 0.45);
-    --brew-crema: oklch(0.78 0.08 80 / 0.12);
-    --bean: oklch(0.58 0.08 55 / 0.45);
-    --bean-crease: oklch(0.3 0.04 45 / 0.7);
-    --steam: oklch(0.95 0.02 80 / 0.22);
+    --brew-base: linear-gradient(160deg, oklch(0.215 0.026 56), oklch(0.17 0.014 52) 48%, oklch(0.145 0.02 40));
+    --brew-caramel: oklch(0.56 0.12 60 / 0.46);
+    --brew-espresso: oklch(0.36 0.08 45 / 0.7);
+    --brew-crema: oklch(0.76 0.1 80 / 0.18);
+    --brew-mocha: oklch(0.46 0.1 32 / 0.4);
+    --bean: oklch(0.55 0.09 52);
+    --bean-crease: oklch(0.24 0.04 42);
+    --steam: oklch(0.96 0.02 80 / 0.3);
+    --cup-saucer: oklch(0.33 0.014 60);
+    --cup-ceramic: oklch(0.39 0.014 60);
+    --cup-shadow: oklch(0.08 0.01 40 / 0.55);
+    --cup-coffee: oklch(0.52 0.085 58);
+    --cup-coffee-edge: oklch(0.3 0.06 44);
+    --cup-crema: oklch(0.58 0.11 60);
+    --cup-foam: oklch(0.86 0.04 80);
+    --cup-alpha: 0.8;
+    --grain-alpha: 0.45;
+    --surface: oklch(0.2 0.012 255 / 0.62);
   }
 }
 
@@ -168,12 +193,24 @@
   --sg-production: oklch(0.68 0.12 295);
   --sg-transit: oklch(0.7 0.12 245);
   --sg-arrived: oklch(0.72 0.12 160);
-  --brew-caramel: oklch(0.55 0.11 60 / 0.3);
-  --brew-espresso: oklch(0.42 0.08 45 / 0.45);
-  --brew-crema: oklch(0.78 0.08 80 / 0.12);
-  --bean: oklch(0.58 0.08 55 / 0.45);
-  --bean-crease: oklch(0.3 0.04 45 / 0.7);
-  --steam: oklch(0.95 0.02 80 / 0.22);
+  --brew-base: linear-gradient(160deg, oklch(0.215 0.026 56), oklch(0.17 0.014 52) 48%, oklch(0.145 0.02 40));
+  --brew-caramel: oklch(0.56 0.12 60 / 0.46);
+  --brew-espresso: oklch(0.36 0.08 45 / 0.7);
+  --brew-crema: oklch(0.76 0.1 80 / 0.18);
+  --brew-mocha: oklch(0.46 0.1 32 / 0.4);
+  --bean: oklch(0.55 0.09 52);
+  --bean-crease: oklch(0.24 0.04 42);
+  --steam: oklch(0.96 0.02 80 / 0.3);
+  --cup-saucer: oklch(0.33 0.014 60);
+  --cup-ceramic: oklch(0.39 0.014 60);
+  --cup-shadow: oklch(0.08 0.01 40 / 0.55);
+  --cup-coffee: oklch(0.52 0.085 58);
+  --cup-coffee-edge: oklch(0.3 0.06 44);
+  --cup-crema: oklch(0.58 0.11 60);
+  --cup-foam: oklch(0.86 0.04 80);
+  --cup-alpha: 0.8;
+  --grain-alpha: 0.45;
+  --surface: oklch(0.2 0.012 255 / 0.62);
 }
 
 @theme inline {
@@ -223,6 +260,12 @@
   --color-sg-arrived: var(--sg-arrived);
 }
 
+@utility surface {
+  background-color: var(--surface);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -258,9 +301,10 @@
 
 
 /*
- * Coffee backdrop. Ambient and slow: glows drift over ~40 s, beans fall over
- * ~a minute, steam rises from the bottom edge. Only transform and opacity
- * animate; blur is fixed per element, so the browser composites it.
+ * Coffee backdrop: a warm cafe scene behind the app, kept blurry. Glows drift
+ * over ~40 s, two cups seen from above sway, beans fall at three depths and
+ * steam rises off the latte. Only transform and opacity animate; blur is fixed
+ * per element, so the browser composites it.
  */
 .coffee-backdrop {
   position: fixed;
@@ -268,6 +312,7 @@
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
+  background: var(--brew-base);
 }
 .coffee-backdrop.is-paused *,
 .coffee-backdrop.is-still * {
@@ -281,24 +326,32 @@
   will-change: transform;
 }
 .brew-caramel {
-  top: -28vmax;
-  left: -18vmax;
+  top: -26vmax;
+  left: -16vmax;
   background: radial-gradient(closest-side, var(--brew-caramel), transparent);
   animation: brew-a 42s ease-in-out infinite alternate;
 }
 .brew-espresso {
-  right: -24vmax;
-  bottom: -30vmax;
+  right: -22vmax;
+  bottom: -28vmax;
   background: radial-gradient(closest-side, var(--brew-espresso), transparent);
   animation: brew-b 48s ease-in-out infinite alternate;
 }
 .brew-crema {
-  top: 18vh;
-  left: 32vw;
-  width: 46vmax;
-  height: 46vmax;
+  top: 16vh;
+  left: 30vw;
+  width: 48vmax;
+  height: 48vmax;
   background: radial-gradient(closest-side, var(--brew-crema), transparent);
   animation: brew-c 36s ease-in-out infinite alternate;
+}
+.brew-mocha {
+  top: -18vmax;
+  right: -14vmax;
+  width: 52vmax;
+  height: 52vmax;
+  background: radial-gradient(closest-side, var(--brew-mocha), transparent);
+  animation: brew-d 54s ease-in-out infinite alternate;
 }
 @keyframes brew-a {
   to { transform: translate3d(14vw, 10vh, 0) scale(1.12); }
@@ -309,6 +362,49 @@
 @keyframes brew-c {
   to { transform: translate3d(-10vw, 8vh, 0) scale(0.9); }
 }
+@keyframes brew-d {
+  to { transform: translate3d(-12vw, 14vh, 0) scale(1.1); }
+}
+
+/* Cups from above. Big and soft, like a table seen past the screen. */
+.cup {
+  position: absolute;
+  will-change: transform;
+}
+.cup > svg:first-child {
+  opacity: var(--cup-alpha);
+}
+.cup-latte {
+  right: -5vmin;
+  bottom: -7vmin;
+  width: clamp(250px, 44vmin, 520px);
+  aspect-ratio: 1;
+  filter: blur(3px);
+  animation: cup-sway 19s ease-in-out infinite alternate;
+}
+.cup-espresso {
+  left: clamp(-70px, 13vw, 260px);
+  top: 50vh;
+  width: clamp(150px, 26vmin, 300px);
+  aspect-ratio: 1;
+  filter: blur(7px);
+  animation: cup-drift 26s ease-in-out infinite alternate;
+}
+@keyframes cup-sway {
+  from { transform: rotate(-7deg); }
+  to { transform: translate3d(-1.5vmin, -2vmin, 0) rotate(9deg); }
+}
+@keyframes cup-drift {
+  from { transform: rotate(10deg); }
+  to { transform: translate3d(2vmin, 3vmin, 0) rotate(-12deg); }
+}
+.cup-latte .steam {
+  bottom: 50%;
+  left: calc(50% + var(--x));
+  height: 300px;
+  filter: blur(9px);
+}
+
 .bean {
   position: absolute;
   top: var(--y);
@@ -320,6 +416,12 @@
   will-change: transform;
   animation: bean-fall var(--dur) linear infinite;
   animation-delay: var(--delay);
+}
+/* Phones: text sits on the open background more often, so beans step back. */
+@media (max-width: 639px) {
+  .bean {
+    opacity: calc(var(--alpha) * 0.6);
+  }
 }
 @keyframes bean-fall {
   from { transform: translate3d(0, calc(-1 * var(--y) - 20vh), 0) rotate(0deg); }
@@ -340,6 +442,21 @@
   0% { transform: translate3d(0, 40px, 0) scaleY(0.7); opacity: 0; }
   30% { opacity: 1; }
   100% { transform: translate3d(var(--dx), -38vh, 0) scaleY(1.3); opacity: 0; }
+}
+
+/* Fine film grain, so the glows read as a photo rather than a gradient. */
+.coffee-grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--grain-alpha);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.24 0 0 0 0 0.15 0 0 0 0.28 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Theme switch: the new theme spreads out from the button as a circle. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 /* A cup that fills while data loads, and steam over the "all clear" cup. */
@@ -380,6 +497,6 @@
     animation: none !important;
   }
   .steam {
-    opacity: 0.6;
+    opacity: 0.55;
   }
 }

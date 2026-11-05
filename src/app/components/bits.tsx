@@ -241,7 +241,7 @@ export function Panel({
   description?: ReactNode;
 }) {
   return (
-    <section className={cn("min-w-0 rounded-xl border bg-card", className)}>
+    <section className={cn("min-w-0 rounded-xl border surface", className)}>
       <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-sm font-semibold">{title}</h2>

@@ -50,7 +50,7 @@ export function StockView() {
 
       <TodayPanel onChaseAll={() => dialogs.chaseAll()} />
 
-      <section aria-labelledby="products-title" className="min-w-0 rounded-xl border bg-card">
+      <section aria-labelledby="products-title" className="min-w-0 rounded-xl border surface">
         <div className="grid gap-3 border-b px-4 py-3">
           <div className="flex items-center justify-between gap-2">
             <h2 id="products-title" className="text-sm font-semibold">

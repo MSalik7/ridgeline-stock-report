@@ -76,7 +76,7 @@ export function HistoryView({ productId }: { productId: string | null }) {
         ))}
       </div>
 
-      <section className="min-w-0 overflow-hidden rounded-xl border bg-card">
+      <section className="min-w-0 overflow-hidden rounded-xl border surface">
         <div className="hidden grid-cols-[7.5rem_1fr_6rem_6rem] gap-4 border-b px-4 py-2.5 text-xs font-medium text-muted-foreground md:grid">
           <span>When</span>
           <span>What and why</span>

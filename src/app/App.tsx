@@ -44,6 +44,7 @@ import { SupplierPortal } from "./views/SupplierPortal";
 import { ScorecardView } from "./views/ScorecardView";
 import { CommandPalette } from "./CommandPalette";
 import { CoffeeBackdrop } from "./components/coffee";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { useDialogs, type Dialogs } from "./dialogs/DialogProvider";
 
 function useHash() {
@@ -178,7 +179,7 @@ function Brand() {
 function Sidebar({ section, supplier }: { section: Section; supplier: boolean }) {
   const nav = useNav();
   return (
-    <aside className="sticky top-0 hidden h-dvh flex-col border-r bg-sidebar/75 backdrop-blur-xl lg:flex">
+    <aside className="sticky top-0 hidden h-dvh flex-col border-r bg-sidebar/60 backdrop-blur-2xl lg:flex">
       <div className="px-4 pt-5 pb-4">
         <Brand />
       </div>
@@ -329,7 +330,7 @@ function BottomNav({ section }: { section: Section }) {
 function MobileTopBar({ onSearch }: { onSearch?: () => void }) {
   const { now, report } = useApp();
   return (
-    <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 flex h-14 items-center justify-between gap-3 border-b bg-background/80 pl-[max(16px,env(safe-area-inset-left,0px))] pr-[max(16px,env(safe-area-inset-right,0px))] backdrop-blur lg:static lg:h-12 lg:bg-transparent lg:px-8 lg:backdrop-blur-none">
+    <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 flex h-14 items-center justify-between gap-2 border-b bg-background/70 sm:gap-3 pl-[max(16px,env(safe-area-inset-left,0px))] pr-[max(16px,env(safe-area-inset-right,0px))] backdrop-blur lg:static lg:h-12 lg:bg-transparent lg:px-8 lg:backdrop-blur-none">
       <div className="lg:hidden">
         <Brand />
       </div>
@@ -343,11 +344,12 @@ function MobileTopBar({ onSearch }: { onSearch?: () => void }) {
           <kbd className="rounded border bg-muted px-1.5 font-mono text-[11px]">{isMac ? "⌘K" : "Ctrl K"}</kbd>
         </button>
       )}
-      <div className="tnum ml-auto text-right text-xs text-muted-foreground" title="All day counts use store time, America/Denver">
+      <div className="tnum ml-auto hidden text-right text-xs text-muted-foreground sm:block" title="All day counts use store time, America/Denver">
         <span className="hidden sm:inline">{formatWeekday(report.today)} · </span>
         {formatStoreClock(now)}
         <span className="hidden sm:inline"> · Denver store time</span>
       </div>
+      <ThemeToggle className="ml-auto sm:ml-0" />
       {onSearch && (
         <Button variant="ghost" size="icon" className="-mr-2 lg:hidden" aria-label="Search products, orders and actions" onClick={onSearch}>
           <SearchIcon />

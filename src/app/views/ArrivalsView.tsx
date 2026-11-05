@@ -57,7 +57,7 @@ export function ArrivalsView() {
       {arrivals.length === 0 ? (
         <EmptyState title="No arrivals yet">Record the first one when a delivery lands at the warehouse.</EmptyState>
       ) : (
-        <section className="min-w-0 rounded-xl border bg-card">
+        <section className="min-w-0 rounded-xl border surface">
           <ul className="divide-y">
             {arrivals.map((a) => (
               <ArrivalRow key={a.id} a={a} />

@@ -130,7 +130,7 @@ export function OrdersView({ route }: { route: string }) {
       {rows.length === 0 ? (
         <EmptyState title="No orders match">Try another stage or product, or place a new order.</EmptyState>
       ) : (
-        <section className="min-w-0 rounded-xl border bg-card">
+        <section className="min-w-0 rounded-xl border surface">
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>

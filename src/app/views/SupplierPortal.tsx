@@ -45,7 +45,7 @@ export function SupplierPortal() {
           const p = o.progress;
           const waiting = needsMe.includes(o);
           return (
-            <article key={o.order.id} className="rounded-xl border bg-card p-4">
+            <article key={o.order.id} className="rounded-xl border surface p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <button className="text-left" onClick={() => setOpenId(o.order.id)}>
                   <div className="font-mono font-semibold hover:underline">{o.order.name}</div>
@@ -79,7 +79,7 @@ export function SupplierPortal() {
       {done.length > 0 && (
         <section className="grid gap-2">
           <h2 className="text-sm font-semibold">Finished</h2>
-          <ul className="divide-y rounded-xl border bg-card">
+          <ul className="divide-y rounded-xl border surface">
             {done.map((o) => (
               <li key={o.order.id}>
                 <button className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-accent/40" onClick={() => setOpenId(o.order.id)}>
@@ -104,7 +104,7 @@ export function SupplierPortal() {
 
 function PortalStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border bg-card p-3 sm:p-4">
+    <div className="rounded-xl border surface p-3 sm:p-4">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="tnum mt-1 text-2xl font-semibold tracking-tight">{units(value)}</div>
     </div>

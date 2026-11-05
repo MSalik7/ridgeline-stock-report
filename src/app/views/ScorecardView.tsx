@@ -55,7 +55,7 @@ export function ScorecardView() {
       {scores.length === 0 ? (
         <EmptyState title="No suppliers yet">Add one under Setup → Suppliers.</EmptyState>
       ) : (
-        <section className="min-w-0 rounded-xl border bg-card">
+        <section className="min-w-0 rounded-xl border surface">
           <div className="hidden overflow-x-auto lg:block">
             <table className="w-full text-sm">
               <thead>
@@ -130,7 +130,7 @@ export function ScorecardView() {
         </section>
       )}
 
-      <section className="rounded-xl border bg-card">
+      <section className="rounded-xl border surface">
         <div className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">Lead times that don't match reality</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">

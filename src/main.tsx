@@ -7,10 +7,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { App } from "@/app/App";
+import { initTheme } from "@/app/theme";
 import { AppProvider } from "@/app/context";
 import { DialogProvider } from "@/app/dialogs/DialogProvider";
 import { loadDemoIntoShared, startStore, switchToSandbox, type StoreState } from "@/app/store";
 
+initTheme();
 void startStore();
 
 function Waiting({ store }: { store: StoreState }) {

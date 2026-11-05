@@ -51,7 +51,7 @@ export function MessagesView() {
       {messages.length === 0 ? (
         <EmptyState title="No messages yet" />
       ) : (
-        <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+        <ul className="divide-y overflow-hidden rounded-xl border surface">
           {messages.map((m) => {
             const open = openId === m.id;
             return (

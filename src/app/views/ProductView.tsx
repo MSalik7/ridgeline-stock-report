@@ -74,7 +74,7 @@ function Product({ row }: { row: ProductRow }) {
 
       <Callouts row={row} />
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-5 rounded-xl border bg-card p-4 sm:grid-cols-4 2xl:grid-cols-8">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5 rounded-xl border surface p-4 sm:grid-cols-4 2xl:grid-cols-8">
         <Stat label="In warehouse" value={units(row.stock)} hint="Physical stock now" tone={f.flags.outOfStock ? "out" : undefined} />
         <Stat label="Sold, not shipped" value={units(row.unshipped)} hint={row.unshipped > row.stock ? "More than in stock: backorders" : "Waiting to ship"} />
         <Stat label="Sells per day" value={dec1(f.adjustedBurn)} hint={<>Trend {factor(f.trendFactor)}</>} />

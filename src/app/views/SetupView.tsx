@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useCoffeeMotion } from "../components/coffee";
+import { ThemeChoiceButtons } from "../components/ThemeToggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { syncFeed } from "@/data/feed";
 import { ago, formatMoment } from "@/domain/dates";
@@ -465,7 +466,14 @@ function DataSetup() {
           )}
         </div>
       </Panel>
-      <Panel title="Display" description="Saved on this device only.">
+      <Panel title="Display" description="Saved on this device only." bodyClassName="grid gap-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span>
+            <span className="block text-sm font-medium">Theme</span>
+            <span className="block text-xs text-muted-foreground">Also in the top right corner. Match device follows your system setting.</span>
+          </span>
+          <ThemeChoiceButtons />
+        </div>
         <label htmlFor="coffee-motion" className="flex items-center justify-between gap-4">
           <span>
             <span className="block text-sm font-medium">Moving coffee background</span>

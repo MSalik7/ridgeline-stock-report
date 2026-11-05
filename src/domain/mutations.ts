@@ -113,6 +113,7 @@ export function createOrder(state: AppState, input: NewOrderInput, actor: Actor,
     chasedAt: {},
     createdAt: now.toISOString(),
     history: [entry(actor, now, "Placed order", `${input.units} units`)],
+    ...(product.unitCost !== undefined ? { unitCost: product.unitCost } : {}),
   };
   return {
     order,
@@ -298,6 +299,45 @@ export function recordOrderMessage(
   return merge(
     put("orders", order.id, withHistory(order, entry(actor, now, "Sent order to supplier", message.to.join(", ")))),
     outboxMessage({ kind: "order", orderId, ...message }, actor, now),
+  );
+}
+
+/**
+ * Places several orders in one go (the "plan reorders" batch). Each order is
+ * created against the state left by the ones before it, so names stay unique.
+ */
+export function createOrders(state: AppState, inputs: NewOrderInput[], actor: Actor, now: Date) {
+  if (!inputs.length) throw new ActionError("Pick at least one product to order.");
+  let working = state;
+  const orders: SupplierOrder[] = [];
+  const sets: ChangeSet[] = [];
+  for (const input of inputs) {
+    const { order, changes } = createOrder(working, input, actor, now);
+    orders.push(order);
+    sets.push(changes);
+    const product = changes.put.find((p) => p.collection === "products")?.data as Product;
+    working = {
+      ...working,
+      orders: [...working.orders, order],
+      products: working.products.map((p) => (p.id === product.id ? product : p)),
+    };
+  }
+  return { orders, changes: merge(...sets) };
+}
+
+/** One email to a supplier covering several orders: every order's history notes it, the outbox keeps one copy. */
+export function recordBatchMessage(
+  state: AppState,
+  orderIds: string[],
+  message: { to: string[]; subject: string; body: string },
+  actor: Actor,
+  now: Date,
+): ChangeSet {
+  const orders = orderIds.map((id) => findOrder(state, id));
+  const msg: OutboxMessage = { id: newId(), at: now.toISOString(), actor, kind: "order", orderIds, ...message };
+  return merge(
+    ...orders.map((o) => put("orders", o.id, withHistory(o, entry(actor, now, "Sent order to supplier", message.to.join(", "))))),
+    put("outbox", msg.id, msg),
   );
 }
 
@@ -521,8 +561,13 @@ export function saveProduct(state: AppState, product: Product): ChangeSet {
   for (const [k, v] of Object.entries(product.forecast)) {
     if (v !== undefined && (!Number.isInteger(v) || v < 0)) throw new ActionError(`${k} must be a whole number of days.`);
   }
+  if (product.unitCost !== undefined && (!Number.isFinite(product.unitCost) || product.unitCost < 0 || product.unitCost > 1_000_000)) {
+    throw new ActionError("Unit cost must be a dollar amount of 0 or more.");
+  }
+  const { unitCost, ...rest } = product;
   const clean: Product = {
-    ...product,
+    ...rest,
+    ...(unitCost !== undefined ? { unitCost: Math.round(unitCost * 100) / 100 } : {}),
     code,
     name: product.name.trim(),
     identifiers: product.identifiers.map((i) => ({ ...i, sku: i.sku.trim().toUpperCase(), label: i.label.trim() || i.sku })),

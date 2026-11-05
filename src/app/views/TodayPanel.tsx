@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { doneToday, todayActions, type TodayAction } from "@/domain/actions";
+import { reorderPlan } from "@/domain/reorder";
 import { formatDay, formatMoment } from "@/domain/dates";
 import { CHASE_LABEL } from "@/domain/orders";
 import { useApp } from "../context";
@@ -33,8 +34,9 @@ const TONE = {
 } as const;
 
 /** The day's work, ranked, each item with the one button that resolves it. */
-export function TodayPanel({ onChaseAll }: { onChaseAll: () => void }) {
+export function TodayPanel({ onChaseAll, onPlanReorders }: { onChaseAll: () => void; onPlanReorders: () => void }) {
   const { report, data } = useApp();
+  const planned = useMemo(() => reorderPlan(report).length, [report]);
   const actions = useMemo(() => todayActions(report), [report]);
   const done = useMemo(() => doneToday(data, report.today), [data, report.today]);
   const chases = actions.filter((a) => a.kind === "chase").length;
@@ -49,11 +51,18 @@ export function TodayPanel({ onChaseAll }: { onChaseAll: () => void }) {
               · {actions.length ? `${actions.length} item${actions.length === 1 ? "" : "s"}, most urgent first` : "all clear"}
             </span>
           </h2>
-          {chases > 1 && (
-            <Button variant="ghost" size="sm" onClick={onChaseAll}>
-              <MailIcon /> Follow up on all {chases}
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-1">
+            {planned > 0 && (
+              <Button variant="ghost" size="sm" onClick={onPlanReorders} title="Everything past its reorder line, plus what crosses it within 30 days">
+                <PackagePlusIcon /> Plan reorders
+              </Button>
+            )}
+            {chases > 1 && (
+              <Button variant="ghost" size="sm" onClick={onChaseAll}>
+                <MailIcon /> Follow up on all {chases}
+              </Button>
+            )}
+          </div>
         </div>
         {actions.length === 0 ? (
           <div className="flex items-center gap-4 px-4 py-6 text-sm">

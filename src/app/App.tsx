@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeftRightIcon,
   BoxesIcon,
+  CircleDollarSignIcon,
   ClipboardPenIcon,
   CloudIcon,
   HardDriveIcon,
@@ -42,6 +43,8 @@ import { MessagesView } from "./views/MessagesView";
 import { SetupView } from "./views/SetupView";
 import { SupplierPortal } from "./views/SupplierPortal";
 import { ScorecardView } from "./views/ScorecardView";
+import { MoneyView } from "./views/MoneyView";
+import { ActivityBell } from "./components/ActivityBell";
 import { CommandPalette } from "./CommandPalette";
 import { CoffeeBackdrop } from "./components/coffee";
 import { ThemeToggle } from "./components/ThemeToggle";
@@ -61,13 +64,14 @@ function useHash() {
   return hash;
 }
 
-type Section = "stock" | "orders" | "arrivals" | "history" | "messages" | "setup";
+type Section = "stock" | "orders" | "arrivals" | "money" | "history" | "messages" | "setup";
 
 function sectionOf(route: string): Section {
   if (route.startsWith("order") || route === "suppliers") return "orders";
   if (route.startsWith("arrivals")) return "arrivals";
   if (route.startsWith("history")) return "history";
   if (route === "messages") return "messages";
+  if (route === "money") return "money";
   if (route === "setup") return "setup";
   return "stock";
 }
@@ -88,6 +92,7 @@ export function App() {
   else if (section === "arrivals") page = <ArrivalsView />;
   else if (section === "history") page = <HistoryView productId={route.startsWith("history-") ? route.slice(8) : null} />;
   else if (section === "messages") page = <MessagesView />;
+  else if (section === "money") page = <MoneyView />;
   else if (section === "setup") page = <SetupView />;
   else page = <StockView />;
 
@@ -96,7 +101,7 @@ export function App() {
       <CoffeeBackdrop />
       <Sidebar section={section} supplier={supplier} />
       <div className="flex min-w-0 flex-col">
-        <MobileTopBar onSearch={supplier ? undefined : () => setPalette(true)} />
+        <MobileTopBar staff={!supplier} onSearch={supplier ? undefined : () => setPalette(true)} />
         <main className="mx-auto w-full max-w-[90rem] min-w-0 flex-1 pl-[max(16px,env(safe-area-inset-left,0px))] pr-[max(16px,env(safe-area-inset-right,0px))] pt-4 pb-28 sm:pt-6 lg:px-8 lg:pb-12">
           <div className="grid gap-4">
             <StaleBanner />
@@ -153,6 +158,7 @@ function useNav() {
     { id: "stock" as const, label: "Stock", href: "#stock", icon: BoxesIcon, count: report.counts.out + report.counts.reorder, alert: true },
     { id: "orders" as const, label: "Supplier orders", short: "Orders", href: "#orders", icon: TruckIcon, count: report.counts.chase, alert: true },
     { id: "arrivals" as const, label: "Arrivals", href: "#arrivals", icon: PackageCheckIcon, count: report.counts.unmatched, alert: false },
+    { id: "money" as const, label: "Money", href: "#money", icon: CircleDollarSignIcon, count: 0, alert: false },
     { id: "history" as const, label: "Stock history", short: "History", href: "#history", icon: HistoryIcon, count: 0, alert: false },
     { id: "messages" as const, label: "Messages", href: "#messages", icon: MailIcon, count: 0, alert: false },
     { id: "setup" as const, label: "Setup", href: "#setup", icon: Settings2Icon, count: 0, alert: false },
@@ -327,11 +333,11 @@ function BottomNav({ section }: { section: Section }) {
   );
 }
 
-function MobileTopBar({ onSearch }: { onSearch?: () => void }) {
+function MobileTopBar({ onSearch, staff }: { onSearch?: () => void; staff: boolean }) {
   const { now, report } = useApp();
   return (
     <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 flex h-14 items-center justify-between gap-2 border-b bg-background/70 sm:gap-3 pl-[max(16px,env(safe-area-inset-left,0px))] pr-[max(16px,env(safe-area-inset-right,0px))] backdrop-blur lg:static lg:h-12 lg:bg-transparent lg:px-8 lg:backdrop-blur-none">
-      <div className="lg:hidden">
+      <div className="min-w-0 lg:hidden">
         <Brand />
       </div>
       {onSearch && (
@@ -344,17 +350,19 @@ function MobileTopBar({ onSearch }: { onSearch?: () => void }) {
           <kbd className="rounded border bg-muted px-1.5 font-mono text-[11px]">{isMac ? "⌘K" : "Ctrl K"}</kbd>
         </button>
       )}
-      <div className="tnum ml-auto hidden text-right text-xs text-muted-foreground sm:block" title="All day counts use store time, America/Denver">
-        <span className="hidden sm:inline">{formatWeekday(report.today)} · </span>
-        {formatStoreClock(now)}
-        <span className="hidden sm:inline"> · Denver store time</span>
+      <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+        <div className="tnum mr-1 hidden text-right text-xs text-muted-foreground sm:block" title="All day counts use store time, America/Denver">
+          {formatWeekday(report.today)} · {formatStoreClock(now)}
+          <span className="hidden md:inline"> · Denver store time</span>
+        </div>
+        {staff && <ActivityBell />}
+        <ThemeToggle />
+        {onSearch && (
+          <Button variant="ghost" size="icon" className="-mr-2 lg:hidden" aria-label="Search products, orders and actions" onClick={onSearch}>
+            <SearchIcon />
+          </Button>
+        )}
       </div>
-      <ThemeToggle className="ml-auto sm:ml-0" />
-      {onSearch && (
-        <Button variant="ghost" size="icon" className="-mr-2 lg:hidden" aria-label="Search products, orders and actions" onClick={onSearch}>
-          <SearchIcon />
-        </Button>
-      )}
     </header>
   );
 }

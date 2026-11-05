@@ -6,6 +6,8 @@ import { ArrivalDialog, EditArrivalDialog, MatchDialog } from "./ArrivalDialogs"
 import { StockChangeDialog } from "./StockChangeDialog";
 import { MessageDialog } from "./MessageDialog";
 import { ChaseAllDialog } from "./ChaseAllDialog";
+import { ReorderPlanDialog } from "./ReorderPlanDialog";
+import { PurchaseOrderDialog } from "./PurchaseOrderDialog";
 
 type Open =
   | { kind: "newOrder"; productId?: string; units?: number }
@@ -18,6 +20,8 @@ type Open =
   | { kind: "orderMessage"; orderId: string }
   | { kind: "chase"; orderId: string; chase: ChaseKind }
   | { kind: "chaseAll" }
+  | { kind: "reorderPlan" }
+  | { kind: "purchaseOrder"; orderIds: string[] }
   | null;
 
 export interface Dialogs {
@@ -31,6 +35,8 @@ export interface Dialogs {
   orderMessage: (orderId: string) => void;
   chase: (orderId: string, chase: ChaseKind) => void;
   chaseAll: () => void;
+  reorderPlan: () => void;
+  purchaseOrder: (orderIds: string[]) => void;
 }
 
 
@@ -48,6 +54,8 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     orderMessage: (orderId) => setOpen({ kind: "orderMessage", orderId }),
     chase: (orderId, chase) => setOpen({ kind: "chase", orderId, chase }),
     chaseAll: () => setOpen({ kind: "chaseAll" }),
+    reorderPlan: () => setOpen({ kind: "reorderPlan" }),
+    purchaseOrder: (orderIds) => setOpen({ kind: "purchaseOrder", orderIds }),
   };
   return (
     <Ctx.Provider value={api}>
@@ -69,6 +77,8 @@ export function DialogProvider({ children }: { children: ReactNode }) {
       {open?.kind === "orderMessage" && <MessageDialog orderId={open.orderId} onClose={close} />}
       {open?.kind === "chase" && <MessageDialog orderId={open.orderId} chase={open.chase} onClose={close} />}
       {open?.kind === "chaseAll" && <ChaseAllDialog onClose={close} />}
+      {open?.kind === "reorderPlan" && <ReorderPlanDialog onClose={close} />}
+      {open?.kind === "purchaseOrder" && <PurchaseOrderDialog orderIds={open.orderIds} onClose={close} />}
     </Ctx.Provider>
   );
 }

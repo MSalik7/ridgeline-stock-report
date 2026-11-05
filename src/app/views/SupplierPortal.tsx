@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2Icon, TruckIcon } from "lucide-react";
+import { CheckCircle2Icon, FileTextIcon, TruckIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { formatDay } from "@/domain/dates";
@@ -57,20 +57,21 @@ export function SupplierPortal() {
               </div>
               {o.order.notes && <p className="mt-2 text-sm">{o.order.notes}</p>}
               <StageBar p={p} labels className="mt-3" />
-              {waiting && (
-                <div className="mt-4 flex flex-wrap gap-2 border-t pt-3">
-                  {!p.confirmed && (
-                    <Button size="sm" onClick={() => run((s, a, now) => confirmOrder(s, o.order.id, a, now), `${o.order.name} confirmed`)}>
-                      <CheckCircle2Icon /> Confirm order
-                    </Button>
-                  )}
-                  {o.order.units - p.tracked > 0 && (
-                    <Button size="sm" variant={p.confirmed ? "default" : "outline"} onClick={() => dialogs.tracking(o.order.id)}>
-                      <TruckIcon /> Add tracking ({units(o.order.units - p.tracked)} units left)
-                    </Button>
-                  )}
-                </div>
-              )}
+              <div className="mt-4 flex flex-wrap gap-2 border-t pt-3">
+                {waiting && !p.confirmed && (
+                  <Button size="sm" onClick={() => run((s, a, now) => confirmOrder(s, o.order.id, a, now), `${o.order.name} confirmed`)}>
+                    <CheckCircle2Icon /> Confirm order
+                  </Button>
+                )}
+                {waiting && o.order.units - p.tracked > 0 && (
+                  <Button size="sm" variant={p.confirmed ? "default" : "outline"} onClick={() => dialogs.tracking(o.order.id)}>
+                    <TruckIcon /> Add tracking ({units(o.order.units - p.tracked)} units left)
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => dialogs.purchaseOrder([o.order.id])}>
+                  <FileTextIcon /> Purchase order
+                </Button>
+              </div>
             </article>
           );
         })}

@@ -13,7 +13,7 @@ import type { Carrier } from "@/domain/types";
 import { useApp } from "../context";
 import { Field, UnitsInput, toInt } from "../components/bits";
 import { CoverageBar } from "../components/charts";
-import { days as fmtDays, units as fmtUnits } from "../format";
+import { days as fmtDays, money, price, units as fmtUnits } from "../format";
 
 export function ProductSelect({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
   const { data } = useApp();
@@ -129,7 +129,18 @@ export function NewOrderDialog({
           <Field
             id="no-units"
             label="Units"
-            hint={row ? `Suggested order: ${fmtUnits(row.forecast.suggestedOrder)} units (covers lead time + target days).` : undefined}
+            hint={
+              row ? (
+                <>
+                  Suggested order: {fmtUnits(row.forecast.suggestedOrder)} units (covers lead time + target days).
+                  {row.product.unitCost !== undefined && n > 0 && (
+                    <span className="block text-foreground/80">
+                      {fmtUnits(n)} × {price(row.product.unitCost)} = <span className="tnum font-medium">{money(n * row.product.unitCost)}</span>
+                    </span>
+                  )}
+                </>
+              ) : undefined
+            }
           >
             <UnitsInput id="no-units" value={unitsText} onChange={setUnits} autoFocus />
           </Field>

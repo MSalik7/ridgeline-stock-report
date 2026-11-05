@@ -141,7 +141,9 @@ export function UnitsInput({
   className,
   autoFocus,
   allowNegative,
+  "aria-label": ariaLabel,
 }: {
+  "aria-label"?: string;
   id: string;
   value: string;
   onChange: (v: string) => void;
@@ -159,6 +161,7 @@ export function UnitsInput({
       value={value}
       placeholder={placeholder}
       autoFocus={autoFocus}
+      aria-label={ariaLabel}
       className={cn("tnum", className)}
       onChange={(e) => {
         const v = e.target.value.replace(allowNegative ? /[^\d-]/g : /[^\d]/g, "");

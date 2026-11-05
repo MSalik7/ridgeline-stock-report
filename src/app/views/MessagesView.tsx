@@ -68,7 +68,8 @@ export function MessagesView() {
                   </div>
                   <div className="truncate text-xs text-muted-foreground">
                     To {m.to.join(", ") || "nobody"} · by <Who actor={m.actor} />
-                    {m.orderId && ` · ${orderName.get(m.orderId) ?? "deleted order"}`}
+                    {(m.orderIds ?? (m.orderId ? [m.orderId] : [])).length > 0 &&
+                      ` · ${(m.orderIds ?? [m.orderId!]).map((id) => orderName.get(id) ?? "deleted order").join(", ")}`}
                   </div>
                 </button>
                 {open && (

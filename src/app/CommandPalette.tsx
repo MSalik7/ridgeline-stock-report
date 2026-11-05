@@ -1,5 +1,6 @@
 import {
   BoxesIcon,
+  CircleDollarSignIcon,
   ClipboardCopyIcon,
   ClipboardPenIcon,
   DownloadIcon,
@@ -57,6 +58,9 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
           </CommandItem>
           <CommandItem value="log manual sale adjustment stock change" onSelect={act(() => dialogs.stockChange())}>
             <ClipboardPenIcon /> Log a sale or adjustment <CommandShortcut>L</CommandShortcut>
+          </CommandItem>
+          <CommandItem value="plan reorders batch reorder everything due" onSelect={act(() => dialogs.reorderPlan())}>
+            <PackagePlusIcon /> Plan reorders: everything due, by supplier
           </CommandItem>
           {report.chaseDue.length > 0 && (
             <CommandItem value="follow up chase all suppliers" onSelect={act(() => dialogs.chaseAll())}>
@@ -125,6 +129,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             { label: "Supplier orders", href: "orders", icon: TruckIcon },
             { label: "Supplier scorecard", href: "suppliers", icon: TruckIcon },
             { label: "Arrivals", href: "arrivals", icon: PackageCheckIcon },
+            { label: "Money", href: "money", icon: CircleDollarSignIcon },
             { label: "Stock history", href: "history", icon: HistoryIcon },
             { label: "Messages", href: "messages", icon: MailIcon },
             { label: "Setup", href: "setup", icon: Settings2Icon },

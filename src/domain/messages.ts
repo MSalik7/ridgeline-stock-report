@@ -48,6 +48,38 @@ export function orderMessage(
   };
 }
 
+/** One message to a supplier for several orders placed together. */
+export function batchOrderMessage(
+  orders: SupplierOrder[],
+  products: Product[],
+  supplier: Supplier | undefined,
+  settings: Settings,
+  poNumber: string,
+): Draft {
+  const name = (o: SupplierOrder) => products.find((p) => p.id === o.productId)?.name ?? "Unknown product";
+  const width = Math.max(...orders.map((o) => o.name.length));
+  const lines = [
+    greeting(supplier),
+    "",
+    `Please confirm these ${orders.length} orders (purchase order ${poNumber}):`,
+    "",
+    ...orders.map((o) => `  ${o.name.padEnd(width)}  ${o.units.toLocaleString("en-US").padStart(6)} x ${name(o)}`),
+  ];
+  const notes = orders.filter((o) => o.notes);
+  if (notes.length) lines.push("", ...notes.map((o) => `  ${o.name}: ${o.notes}`));
+  lines.push(
+    "",
+    `Each order can ship on its own. Please confirm each one by reply or in the supplier portal, and add tracking numbers with their unit counts to the matching order when they ship.`,
+    "",
+    signoff(settings),
+  );
+  return {
+    to: supplier ? [supplier.email] : [],
+    subject: `${orders.length} orders: ${orders.map((o) => o.name).join(", ")}`,
+    body: lines.join("\n"),
+  };
+}
+
 /** Follow-up for one chase alert. */
 export function chaseMessage(
   kind: ChaseKind,

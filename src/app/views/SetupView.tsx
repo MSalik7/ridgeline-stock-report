@@ -17,6 +17,7 @@ import type { ForecastSettings, Product, SalesIdentifier, Supplier } from "@/dom
 import { useApp } from "../context";
 import { loadDemoIntoShared, resetSandbox, switchToSandbox, switchToShared, hasShared } from "../store";
 import { Confirm, Field, PageHeader, Panel, UnitsInput, toInt } from "../components/bits";
+import { price } from "../format";
 import { SupplierSelect } from "../dialogs/OrderDialogs";
 
 const TABS = ["forecast", "products", "suppliers", "alerts", "data"] as const;
@@ -153,6 +154,7 @@ function ProductsSetup() {
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground">
                   {data.suppliers.find((s) => s.id === p.supplierId)?.name ?? "No supplier"}
+                  {p.unitCost !== undefined ? ` · ${price(p.unitCost)} per unit` : " · no unit cost"}
                   {own.length > 0 && ` · own settings: ${own.map(([k, v]) => `${LABEL[k as keyof ForecastSettings]} ${v} d`).join(", ")}`}
                 </div>
               </div>
@@ -182,6 +184,7 @@ function ProductDialog({ product, isNew, onClose }: { product: Product; isNew: b
     targetDays: product.forecast.targetDays?.toString() ?? "",
   });
   const [count, setCount] = useState(String(product.stockCount.units));
+  const [cost, setCost] = useState(product.unitCost?.toString() ?? "");
   const eff = effectiveSettings(data.settings.forecast, product);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -206,6 +209,7 @@ function ProductDialog({ product, isNew, onClose }: { product: Product; isNew: b
                   supplierId,
                   forecast,
                   identifiers: ids.map(({ sku, label, units }) => ({ sku, label, unitsPerSale: toInt(units) })),
+                  unitCost: cost.trim() === "" ? undefined : Number(cost),
                   stockCount: isNew ? { units: toInt(count) || 0, date: report.today } : product.stockCount,
                 }),
               isNew ? "Product added" : "Product saved",
@@ -221,9 +225,25 @@ function ProductDialog({ product, isNew, onClose }: { product: Product; isNew: b
               <Input id="pd-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="font-mono" maxLength={8} />
             </Field>
           </div>
-          <Field id="pd-supplier" label="Usual supplier">
-            <SupplierSelect id="pd-supplier" value={supplierId} onChange={setSupplierId} />
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-[1fr_9rem]">
+            <Field id="pd-supplier" label="Usual supplier">
+              <SupplierSelect id="pd-supplier" value={supplierId} onChange={setSupplierId} />
+            </Field>
+            <Field id="pd-cost" label="Unit cost (USD)">
+              <div className="relative">
+                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                <Input
+                  id="pd-cost"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  className="tnum pl-6"
+                  placeholder="0.00"
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value.replace(/[^\d.]/g, ""))}
+                />
+              </div>
+            </Field>
+          </div>
           <div className="grid gap-2">
             <div className="text-sm font-medium">Sales identifiers</div>
             {ids.map((i, n) => (

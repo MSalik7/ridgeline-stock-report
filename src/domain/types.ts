@@ -49,6 +49,8 @@ export interface Product {
   stockCount: { units: number; date: StoreDate };
   /** Next number for readable order names (CODE-001). Never reused. */
   nextOrderSeq: number;
+  /** What one unit costs from the supplier, in US dollars. Older data may not have it. */
+  unitCost?: number;
 }
 
 export interface Supplier {
@@ -110,6 +112,8 @@ export interface SupplierOrder {
   chasedAt: Partial<Record<ChaseKind, Timestamp>>;
   createdAt: Timestamp;
   history: HistoryEntry[];
+  /** Unit cost when the order was placed, so a later price change doesn't rewrite it. */
+  unitCost?: number;
 }
 
 /** Part of an arrival assigned to an order, or to nothing (orderId null = "not from an order"). */
@@ -174,6 +178,8 @@ export interface OutboxMessage {
   subject: string;
   body: string;
   orderId?: string;
+  /** Set when one message covers several orders (a batch to one supplier). */
+  orderIds?: string[];
   actor: Actor;
 }
 

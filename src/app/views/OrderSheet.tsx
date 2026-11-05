@@ -3,6 +3,7 @@ import {
   BanIcon,
   CheckCircle2Icon,
   ExternalLinkIcon,
+  FileTextIcon,
   MailIcon,
   MoreHorizontalIcon,
   PackageCheckIcon,
@@ -127,6 +128,11 @@ export function OrderDetail({ view, onDeleted, supplierMode = false }: { view: O
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {supplierMode && (
+            <Button size="sm" variant="outline" onClick={() => dialogs.purchaseOrder([order.id])}>
+              <FileTextIcon /> Purchase order
+            </Button>
+          )}
           {open && !p.confirmed && (
             <Button size="sm" onClick={() => run((s, a, now) => confirmOrder(s, order.id, a, now), `${order.name} confirmed`)}>
               <CheckCircle2Icon /> Mark confirmed
@@ -155,6 +161,9 @@ export function OrderDetail({ view, onDeleted, supplierMode = false }: { view: O
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => dialogs.purchaseOrder([order.id])}>
+                  <FileTextIcon /> Purchase order (print or save)
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => dialogs.editOrder(order.id)}>
                   <PencilIcon /> Edit units, supplier, notes
                 </DropdownMenuItem>

@@ -26,6 +26,8 @@ const HEADER = [
   "Reorder by",
   "Suggested order",
   "Runs out before next delivery",
+  "Unit cost (USD)",
+  "Stock value (USD)",
 ];
 
 function rows(report: Report): string[][] {
@@ -51,6 +53,8 @@ function rows(report: Report): string[][] {
       f.reorderBy ?? "",
       String(f.suggestedOrder),
       r.outlook.runsOutOn ? `${r.outlook.runsOutOn}${r.outlook.nextStock ? ` until ${r.outlook.nextStock.expectedOn}` : ""}` : "",
+      r.product.unitCost === undefined ? "" : r.product.unitCost.toFixed(2),
+      r.product.unitCost === undefined ? "" : (Math.max(0, r.stock) * r.product.unitCost).toFixed(2),
     ];
   });
 }
@@ -69,13 +73,19 @@ interface DownloadsApi {
 }
 
 export async function downloadStockCsv(report: Report) {
-  const filename = `stock-report-${report.today}.csv`;
-  const data = csv(report);
+  await saveTextFile(`stock-report-${report.today}.csv`, csv(report), "text/csv", "Use “Copy as table” instead.");
+}
+
+/**
+ * Offers a file to the viewer. Inside Claude it goes through the downloads
+ * capability (the viewer confirms); locally it's a normal browser download.
+ */
+export async function saveTextFile(filename: string, data: string, type: string, fallbackHint: string) {
   const rt = (window as unknown as { claude?: { use?: (n: string) => Promise<unknown> } }).claude;
   if (rt?.use) {
     const dl = (await rt.use("downloads")) as DownloadsApi | null;
     if (!dl) {
-      toast.error("Downloads aren't available in this view. Use “Copy as table” instead.");
+      toast.error(`Downloads aren't available in this view. ${fallbackHint}`);
       return;
     }
     try {
@@ -83,12 +93,11 @@ export async function downloadStockCsv(report: Report) {
       toast.success(`Saved ${filename}`);
     } catch (e) {
       const code = (e as { code?: string }).code;
-      if (code !== "declined") toast.error("The file couldn't be saved here. Use “Copy as table” instead.");
+      if (code !== "declined") toast.error(`The file couldn't be saved here. ${fallbackHint}`);
     }
     return;
   }
-  // Running outside Claude (local development): a normal browser download.
-  const url = URL.createObjectURL(new Blob([data], { type: "text/csv" }));
+  const url = URL.createObjectURL(new Blob([data], { type }));
   const a = Object.assign(document.createElement("a"), { href: url, download: filename });
   a.click();
   URL.revokeObjectURL(url);

@@ -48,7 +48,7 @@ export function StockView() {
         }
       />
 
-      <TodayPanel onChaseAll={() => dialogs.chaseAll()} />
+      <TodayPanel onChaseAll={() => dialogs.chaseAll()} onPlanReorders={() => dialogs.reorderPlan()} />
 
       <section aria-labelledby="products-title" className="min-w-0 rounded-xl border surface">
         <div className="grid gap-3 border-b px-4 py-3">

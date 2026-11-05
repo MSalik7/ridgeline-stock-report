@@ -127,6 +127,11 @@ export function App() {
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 const SIDEBAR_KEY = "ridgeline-stock:sidebar";
 
+/** True while focus is in a text field, where single-key shortcuts must not fire. */
+function isTyping(target: EventTarget | null) {
+  return target instanceof Element && !!target.closest("input, textarea, select, [contenteditable=true]");
+}
+
 /** Laptop sidebar: full, or a slim icon rail. Ctrl/Cmd+B toggles; each device remembers. */
 function useSidebar(): [boolean, () => void] {
   const [collapsed, setCollapsed] = useState(() => {
@@ -149,7 +154,7 @@ function useSidebar(): [boolean, () => void] {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== "b") return;
-      if ((e.target as HTMLElement | null)?.closest("input, textarea, select, [contenteditable=true]")) return;
+      if (isTyping(e.target)) return;
       e.preventDefault();
       toggle();
     };
@@ -189,7 +194,7 @@ function useShortcuts(enabled: boolean, setPalette: (f: (o: boolean) => boolean)
         return;
       }
       const t = e.target as HTMLElement | null;
-      if (e.metaKey || e.ctrlKey || e.altKey || t?.closest("input, textarea, select, [contenteditable=true]")) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(t)) return;
       if (document.querySelector("[role=dialog], [role=alertdialog], [role=menu]")) return;
       const k = e.key.toLowerCase();
       if (k === "/") setPalette(() => true);

@@ -75,8 +75,8 @@ function Product({ row }: { row: ProductRow }) {
       <Callouts row={row} />
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-5 rounded-xl border surface p-4 sm:grid-cols-4 2xl:grid-cols-8">
-        <Stat label="In warehouse" value={units(row.stock)} hint="Physical stock now" tone={f.flags.outOfStock ? "out" : undefined} />
-        <Stat label="Sold, not shipped" value={units(row.unshipped)} hint={row.unshipped > row.stock ? "More than in stock: backorders" : "Waiting to ship"} />
+        <Stat label="In warehouse" value={units(row.stock)} tone={f.flags.outOfStock ? "out" : undefined} />
+        <Stat label="Sold, not shipped" value={units(row.unshipped)} hint={row.unshipped > row.stock ? "More than in stock: backorders" : undefined} />
         <Stat label="Sells per day" value={dec1(f.adjustedBurn)} hint={<>Trend {factor(f.trendFactor)}</>} />
         <Stat
           label="Days of stock"
@@ -108,7 +108,7 @@ function Product({ row }: { row: ProductRow }) {
 
       <Panel
         title="Stock outlook"
-        description="When open orders should land, and whether the shelf empties first. Sales continue at today's pace."
+        description="When open orders land, and whether the shelf empties first."
       >
         <StockOutlook row={row} />
       </Panel>
@@ -360,7 +360,7 @@ function RecentHistory({ row }: { row: ProductRow }) {
             <div className="min-w-0">
               <span className="font-medium">{LEDGER_LABEL[l.kind]}</span>{" "}
               <span className="text-muted-foreground">· {formatDay(l.date)}</span>
-              <div className="truncate text-xs text-muted-foreground">{l.why}</div>
+              {l.kind !== "shipped" && <div className="truncate text-xs text-muted-foreground">{l.why}</div>}
             </div>
             <div className="text-right">
               <div className={cn("tnum font-medium", l.change > 0 ? "text-st-ok" : l.change < 0 ? "" : "text-muted-foreground")}>

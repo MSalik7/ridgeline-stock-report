@@ -35,7 +35,7 @@ export function StageBar({ p, gone = 0, className, labels = false }: { p: OrderP
           />
         )}
       </div>
-      {labels && (
+      {labels && (parts.length > 1 || gone > 0) && (
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {parts.map((x) => (
             <span key={x.key} className="inline-flex items-center gap-1.5">

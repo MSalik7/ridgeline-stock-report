@@ -24,13 +24,13 @@ export function MessagesView() {
     <div className="grid gap-6">
       <PageHeader
         title="Messages"
-        description="Order messages, supplier follow-ups and reorder alerts sent from here."
+        description="Every order message, supplier follow-up and reorder alert, logged."
       />
       <div className="flex items-start gap-3 rounded-xl border bg-muted/40 px-4 py-3 text-sm">
         <FlaskConicalIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
         <p>
           <span className="font-medium">Email is in test mode.</span>{" "}
-          <span className="text-muted-foreground">Nothing here was delivered. Each message is logged so you can see what would have gone out, copy it, and send it yourself.</span>
+          <span className="text-muted-foreground">Nothing here was delivered. Open a message to copy it.</span>
         </p>
       </div>
       <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">

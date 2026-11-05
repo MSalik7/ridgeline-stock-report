@@ -298,7 +298,7 @@ function ProductDialog({ product, isNew, onClose }: { product: Product; isNew: b
 // ---------------------------------------------------------------- suppliers
 
 function SuppliersSetup() {
-  const { data } = useApp();
+  const { data, report } = useApp();
   const [editing, setEditing] = useState<Supplier | null>(null);
   return (
     <Panel
@@ -312,7 +312,7 @@ function SuppliersSetup() {
     >
       <ul className="divide-y">
         {data.suppliers.map((s) => {
-          const open = data.orders.filter((o) => o.supplierId === s.id && o.state === "open").length;
+          const open = report.orders.filter((o) => o.order.supplierId === s.id && o.open).length;
           return (
             <li key={s.id} className="flex items-center gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
@@ -387,7 +387,7 @@ function AlertsSetup() {
   const save = (enabled: boolean) =>
     run(() => saveSettings({ ...data.settings, reorderEmails: { enabled, recipients: list } }), enabled ? "Reorder emails on" : "Reorder emails off");
   return (
-    <Panel title="Reorder alert emails" description="A daily email listing products below the reorder line. Email is in test mode: messages are logged under Messages and not delivered.">
+    <Panel title="Reorder alert emails" description="An email listing products below the reorder line. Test mode: messages are logged under Messages, never delivered.">
       <div className="grid max-w-2xl gap-5">
         <label htmlFor="al-enabled" className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3">
           <span>
@@ -437,7 +437,7 @@ function DataSetup() {
   const feed = data.feed;
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <Panel title="Store and warehouse feed" description="Sales come from the store, shipments and stock from the warehouse. This demo uses a simulated feed so every number stays real.">
+      <Panel title="Store and warehouse feed" description="Sales come from the store, shipments and stock from the warehouse. This demo uses a simulated feed.">
         <dl className="grid gap-3 text-sm">
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">Sales last synced</dt>
@@ -490,7 +490,7 @@ function DataSetup() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span>
             <span className="block text-sm font-medium">Theme</span>
-            <span className="block text-xs text-muted-foreground">Also in the top right corner. Match device follows your system setting.</span>
+            <span className="block text-xs text-muted-foreground">Match device follows your system setting.</span>
           </span>
           <ThemeChoiceButtons />
         </div>

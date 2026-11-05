@@ -110,7 +110,8 @@ export function StockOutlook({ row }: { row: ProductRow }) {
         </svg>
       </div>
 
-      <p className="mt-2 text-sm">{summary(row, today)}</p>
+      {/* The product page already has a callout for a run-out gap; say it once. */}
+      {!(row.outlook.runsOutOn && !row.forecast.flags.outOfStock) && <p className="mt-2 text-sm">{summary(row, today)}</p>}
       {o.incoming.length > 0 && (
         <ul className="mt-3 grid gap-1.5 text-sm">
           {o.incoming.map((i, n) => (

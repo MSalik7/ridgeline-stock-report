@@ -66,7 +66,7 @@ export function todayActions(report: Report): TodayAction[] {
       key: `chase-${a.orderId}-${a.kind}`,
       severity: critical ? "critical" : r && ["reorder", "urgent"].includes(r.forecast.status) ? "high" : "normal",
       title: `${CHASE_LABEL[a.kind]}: ${o.order.name}`,
-      detail: `${a.reason}.${critical && r ? ` ${r.product.name} ${r.forecast.flags.outOfStock ? "is out of stock" : `runs out ${formatDay(r.outlook.runsOutOn!)}`} and this is the next stock.` : ""} ${o.supplier?.name ?? ""}`.trim(),
+      detail: `${o.supplier ? `${o.supplier.name} · ` : ""}${a.reason}.${critical && r ? ` ${r.product.name} ${r.forecast.flags.outOfStock ? "is out of stock" : `runs out ${formatDay(r.outlook.runsOutOn!)}`} and this is the next stock.` : ""}`,
       orderId: a.orderId,
       chase: a.kind,
     });

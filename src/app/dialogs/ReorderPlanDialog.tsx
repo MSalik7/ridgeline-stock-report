@@ -77,8 +77,7 @@ export function ReorderPlanDialog({ onClose }: { onClose: () => void }) {
           <DialogTitle>Plan reorders</DialogTitle>
           <DialogDescription>
             {nowCount > 0 ? `${plural(nowCount, "product")} past the reorder line` : "Nothing is past the reorder line"}
-            {plan.length > nowCount && `, ${plan.length - nowCount} more crossing it within ${DUE_SOON_DAYS} days`}. Ordering them together means fewer shipments
-            per supplier. Units start at the suggested order; each goes to the product's usual supplier.
+            {plan.length > nowCount && `, ${plan.length - nowCount} more crossing it within ${DUE_SOON_DAYS} days`}. Units start at the suggested order; each goes to its usual supplier.
           </DialogDescription>
         </DialogHeader>
 

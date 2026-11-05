@@ -266,11 +266,7 @@ export function TrackingDialog({ orderId, onClose }: { orderId: string; onClose:
         <DialogHeader>
           <DialogTitle>Add tracking to {view.order.name}</DialogTitle>
           <DialogDescription>
-            {fmtUnits(view.order.units)} units ordered, {fmtUnits(view.progress.tracked)} already tracked.{" "}
-            <span className={over ? "font-medium text-destructive" : "font-medium text-foreground"}>
-              {fmtUnits(Math.max(0, room - total))} of {fmtUnits(room)} left to track
-            </span>
-            . You can add the rest later.
+            {fmtUnits(room)} of {fmtUnits(view.order.units)} units still need tracking. Add some now and the rest later.
           </DialogDescription>
         </DialogHeader>
         <form

@@ -39,7 +39,7 @@ export function MoneyView() {
     <div className="grid gap-6">
       <PageHeader
         title="Money"
-        description="What the stock is worth, the cash already promised to suppliers, and what the next reorders will cost. Everything is units × what you pay per unit."
+        description="Every amount is units × unit cost."
         actions={
           m.reorderDue.products > 0 && (
             <Button onClick={() => dialogs.reorderPlan()}>
@@ -66,7 +66,7 @@ export function MoneyView() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <Panel title="When promised cash turns into stock" description="Open orders by the week they should land. Late units count as due now.">
-          <Landing weeks={m.landing} late={lateTotal} today={report.today} />
+          <Landing weeks={m.landing} late={lateTotal} />
         </Panel>
         <Panel title="By supplier" description="Open orders only." bodyClassName="p-0">
           {m.suppliers.length === 0 ? (
@@ -163,7 +163,7 @@ function Summary({ m, lateTotal }: { m: ReturnType<typeof buildMoney>; lateTotal
   );
 }
 
-function Landing({ weeks, late, today }: { weeks: { weekOf: string; value: number }[]; late: number; today: string }) {
+function Landing({ weeks, late }: { weeks: { weekOf: string; value: number }[]; late: number }) {
   const max = Math.max(1, ...weeks.map((w) => w.value));
   return (
     <div>
@@ -198,7 +198,6 @@ function Landing({ weeks, late, today }: { weeks: { weekOf: string; value: numbe
             <span className="size-2 rounded-sm bg-st-out" /> Late, still not here
           </span>
         )}
-        <span>Weeks start {formatDay(today)}.</span>
       </div>
     </div>
   );

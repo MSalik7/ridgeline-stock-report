@@ -30,7 +30,7 @@ export function ChaseAllDialog({ onClose }: { onClose: () => void }) {
         <DialogHeader>
           <DialogTitle>Follow up on {drafts.length} supplier orders</DialogTitle>
           <DialogDescription>
-            Each message is ready to send. Email is in test mode, so copy them into your email, then mark them sent. Each alert pauses for 2 days.
+            Email is in test mode: copy them into your email, then mark them sent. Each alert then pauses for 2 days.
           </DialogDescription>
         </DialogHeader>
         <ul className="divide-y rounded-lg border">

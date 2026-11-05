@@ -48,7 +48,7 @@ export function ScorecardView() {
     <div className="grid gap-6">
       <PageHeader
         title="Supplier scorecard"
-        description="How each supplier actually performs, measured from the orders on record. Use it to set honest lead times and to decide who needs chasing."
+        description="How each supplier actually performs, measured from the orders on record."
       />
       <OrdersTabs active="suppliers" />
 

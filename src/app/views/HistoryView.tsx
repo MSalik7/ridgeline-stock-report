@@ -91,7 +91,7 @@ export function HistoryView({ productId }: { productId: string | null }) {
               <div className="col-span-2 row-start-2 min-w-0 md:col-span-1 md:row-start-auto">
                 <div className="text-sm font-medium">{LEDGER_LABEL[l.kind]}</div>
                 <div className="text-xs break-words text-muted-foreground">
-                  {l.why}
+                  {l.kind !== "shipped" && l.why}
                   {l.actor && (
                     <>
                       {" "}

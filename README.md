@@ -31,7 +31,7 @@ npm run build      # typecheck, build, and write artifact/stock-report.html
 - **Arrivals and stock history:** oldest-first matching, hand matching, and a ledger of every stock change.
 - **Money:** stock value, cash promised to suppliers, and what reorders will cost.
 - **Supplier portal:** a supplier sees only their orders and can confirm them and add tracking.
-- **Everywhere:** an activity bell, Undo on every action, Ctrl/Cmd+K search, light and dark themes, and a phone layout at 390 px.
+- **Everywhere:** a guided tour on first visit, an activity bell, Undo on every action, Ctrl/Cmd+K search, light and dark themes, and a phone layout at 390 px.
 
 ## Where things are
 

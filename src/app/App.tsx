@@ -50,6 +50,7 @@ import { ActivityBell } from "./components/ActivityBell";
 import { CommandPalette } from "./CommandPalette";
 import { CoffeeBackdrop } from "./components/coffee";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { Tour } from "./components/Tour";
 import { useDialogs, type Dialogs } from "./dialogs/DialogProvider";
 
 function useHash() {
@@ -119,6 +120,7 @@ export function App() {
         </main>
       </div>
       {!supplier && <BottomNav section={section} />}
+      <Tour enabled={!supplier} />
       {!supplier && <CommandPalette open={palette} onOpenChange={setPalette} sidebarCollapsed={collapsed} onToggleSidebar={toggleSidebar} />}
     </div>
   );
@@ -153,6 +155,7 @@ function useSidebar(): [boolean, () => void] {
   }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (document.body.dataset.tour) return;
       if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== "b") return;
       if (isTyping(e.target)) return;
       e.preventDefault();
@@ -188,6 +191,7 @@ function useShortcuts(enabled: boolean, setPalette: (f: (o: boolean) => boolean)
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
+      if (document.body.dataset.tour) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPalette((o) => !o);
@@ -378,6 +382,7 @@ function BottomNav({ section }: { section: Section }) {
         </div>
         {right.map(tab)}
         <button
+          data-tour="role"
           onClick={() => setMore(true)}
           className={cn(
             "flex flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px]",
@@ -532,6 +537,7 @@ function RoleSwitcher({ compact = false, inBar = false }: { compact?: boolean; i
       <RailTip show={compact} label={`Viewing as ${label}`}>
         <DropdownMenuTrigger asChild>
           <button
+            data-tour={inBar ? undefined : "role"}
             aria-label={iconOnly ? `Viewing as ${label}. Switch` : undefined}
             title={inBar ? `Viewing as ${label}` : undefined}
             className={cn(

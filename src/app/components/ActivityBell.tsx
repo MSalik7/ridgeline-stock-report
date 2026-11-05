@@ -88,7 +88,7 @@ export function ActivityBell() {
       }}
     >
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative rounded-full" aria-label={n ? `Activity, ${n} new` : "Activity"} title="Activity">
+        <Button data-tour="bell" variant="ghost" size="icon" className="relative rounded-full" aria-label={n ? `Activity, ${n} new` : "Activity"} title="Activity">
           <BellIcon className={cn(ring && "bell-ring")} onAnimationEnd={() => setRing(false)} />
           {n > 0 && (
             <span className="tnum badge-pop absolute top-0.5 right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-st-out px-1 text-[10px] leading-none font-semibold text-white ring-2 ring-background dark:text-background">

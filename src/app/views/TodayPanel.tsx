@@ -43,7 +43,7 @@ export function TodayPanel({ onChaseAll, onPlanReorders }: { onChaseAll: () => v
 
   return (
     <section aria-labelledby="today-title" className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className="min-w-0 rounded-xl border surface">
+      <div data-tour="today" className="min-w-0 rounded-xl border surface">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
           <h2 id="today-title" className="text-sm font-semibold">
             To do today{" "}
@@ -53,7 +53,7 @@ export function TodayPanel({ onChaseAll, onPlanReorders }: { onChaseAll: () => v
           </h2>
           <div className="flex flex-wrap gap-1">
             {planned > 0 && (
-              <Button variant="ghost" size="sm" onClick={onPlanReorders} title="Everything past its reorder line, plus what crosses it within 30 days">
+              <Button data-tour="plan" variant="ghost" size="sm" onClick={onPlanReorders} title="Everything past its reorder line, plus what crosses it within 30 days">
                 <PackagePlusIcon /> Plan reorders
               </Button>
             )}

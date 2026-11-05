@@ -1,5 +1,6 @@
 import {
   BoxesIcon,
+  CompassIcon,
   PanelLeftIcon,
   CircleDollarSignIcon,
   ClipboardCopyIcon,
@@ -33,6 +34,7 @@ import { useDialogs } from "./dialogs/DialogProvider";
 import { STOCK_DOT, STAGE_COLOR } from "./components/badges";
 import { go } from "./components/bits";
 import { copyStockTable, downloadStockCsv } from "./export";
+import { startTour } from "./components/Tour";
 import { cn } from "@/lib/utils";
 
 /** Jump to any product, order or page, or run an action, by typing. */
@@ -78,6 +80,9 @@ export function CommandPalette({
               <MailIcon /> Follow up on all {report.chaseDue.length} due orders
             </CommandItem>
           )}
+          <CommandItem value="take the guided tour help walkthrough" onSelect={act(startTour)}>
+            <CompassIcon /> Take the guided tour
+          </CommandItem>
           <CommandItem value="toggle sidebar collapse expand rail" onSelect={act(onToggleSidebar)}>
             <PanelLeftIcon /> {sidebarCollapsed ? "Expand the sidebar" : "Collapse the sidebar"} <CommandShortcut>Ctrl B</CommandShortcut>
           </CommandItem>

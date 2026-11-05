@@ -472,6 +472,23 @@
   from { transform: scale(0.4); opacity: 0; }
 }
 
+/* Guided tour: a spotlight that glides between targets, and a card that settles in. */
+.tour-spot {
+  /* The dim reaches the farthest corner (1.5 x the longest side); a huge fixed size silently fails to draw. */
+  box-shadow:
+    0 0 0 150vmax oklch(0.15 0.01 50 / 0.55),
+    0 0 0 2px oklch(1 0 0 / 0.8);
+  pointer-events: none;
+  transition: top 0.32s cubic-bezier(0.22, 1, 0.36, 1), left 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.32s cubic-bezier(0.22, 1, 0.36, 1), height 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tour-card {
+  animation: tour-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes tour-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+}
+
 /* Theme switch: the new theme spreads out from the button as a circle. */
 ::view-transition-old(root),
 ::view-transition-new(root) {

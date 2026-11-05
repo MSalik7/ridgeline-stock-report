@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useCoffeeMotion } from "../components/coffee";
 import { ThemeChoiceButtons } from "../components/ThemeToggle";
+import { startTour } from "../components/Tour";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { syncFeed } from "@/data/feed";
 import { ago, formatMoment } from "@/domain/dates";
@@ -493,6 +494,15 @@ function DataSetup() {
             <span className="block text-xs text-muted-foreground">Match device follows your system setting.</span>
           </span>
           <ThemeChoiceButtons />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span>
+            <span className="block text-sm font-medium">Guided tour</span>
+            <span className="block text-xs text-muted-foreground">Five steps through the main screens.</span>
+          </span>
+          <Button variant="outline" size="sm" onClick={startTour}>
+            Take the tour
+          </Button>
         </div>
         <label htmlFor="coffee-motion" className="flex items-center justify-between gap-4">
           <span>

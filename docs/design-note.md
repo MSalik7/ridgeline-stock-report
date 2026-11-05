@@ -16,7 +16,7 @@ Demo: https://ridgeline-stock-report.vercel.app · Claude Artifact: https://clau
 | **Money** | extra | Stock value, cash promised to suppliers, and what reorders will cost. |
 | **Supplier portal** | supplier | Only that supplier's orders: confirm and add tracking. |
 
-**Everywhere:** an activity bell, Undo on every action, Ctrl/Cmd+K search, and light and dark themes. **On a phone (390 px)**, tables become cards and navigation moves to a bottom tab bar.
+**Everywhere:** a five-step guided tour on first visit, an activity bell, Undo on every action, Ctrl/Cmd+K search, and light and dark themes. **On a phone (390 px)**, tables become cards and navigation moves to a bottom tab bar.
 
 **Timing, on top of the SOP.** "Days with everything ordered" counts ordered units as if they were already on the shelf. So each open order also gets an expected arrival: tracked units land at ship date + 10 days (the chase rule's 10 days), the rest at order date + lead time. A day-by-day projection then shows whether stock runs out first. In the demo, the grinder is out for about three weeks before its next order lands, which no SOP number shows. None of the SOP numbers change.
 

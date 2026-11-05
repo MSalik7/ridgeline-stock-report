@@ -24,6 +24,12 @@ describe.each(days)("demo generated at %s", (iso) => {
     expect(withSales.length).toBeGreaterThanOrEqual(30);
   });
 
+  it("uses only @example.com email addresses (SOP section 5)", () => {
+    const emails = JSON.stringify(state).match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g) ?? [];
+    expect(emails.length).toBeGreaterThan(0);
+    expect(emails.filter((e) => !e.endsWith("@example.com"))).toEqual([]);
+  });
+
   it("shows every stock flag", () => {
     expect(by("CBJ").forecast.status).toBe("out");
     expect(by("GRD").forecast.status).toBe("reorder");

@@ -236,7 +236,7 @@ export function buildDemoState(now: Date): AppState {
 
   const stockChanges: StockChange[] = [
     { id: "c1", productId: "drp", kind: "adjustment", units: -6, note: "Cracked in storage, written off", on: d(-12), at: t(-12, 15), actor: staff },
-    { id: "c2", productId: "mug", kind: "manual_sale", units: -24, note: "Wholesale to Corvus Coffee (cafe)", on: d(-8), at: t(-8, 12), actor: staff },
+    { id: "c2", productId: "mug", kind: "manual_sale", units: -24, note: "Wholesale to a local cafe (demo customer)", on: d(-8), at: t(-8, 12), actor: staff },
     { id: "c3", productId: "ktl", kind: "adjustment", units: 3, note: "Cycle count: 3 found on the wrong shelf", on: d(-3), at: t(-3, 16), actor: staff },
   ];
 

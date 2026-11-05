@@ -100,7 +100,7 @@ export function StockChangeDialog({ productId: initial, onClose }: { productId?:
               id="sc-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder={kind === "manual_sale" ? "Wholesale to Corvus Coffee" : "Two cracked in storage"}
+              placeholder={kind === "manual_sale" ? "Wholesale to a cafe customer" : "Two cracked in storage"}
             />
           </Field>
         </form>

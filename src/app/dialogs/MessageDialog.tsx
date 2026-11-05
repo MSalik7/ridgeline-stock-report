@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SendIcon } from "lucide-react";
+import { MailIcon, SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ export function MessageDialog({ orderId, chase, onClose }: { orderId: string; ch
   const full = `To: ${to}\nSubject: ${subject}\n\n${body}`;
   const recipients = to.split(/[,;\s]+/).filter(Boolean);
   const title = chase ? `${CHASE_LABEL[chase]}: ${view.order.name}` : `Send ${view.order.name} to the supplier`;
+  const mailto = `mailto:${recipients.join(",")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -41,7 +42,7 @@ export function MessageDialog({ orderId, chase, onClose }: { orderId: string; ch
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             {chase && alert ? `${alert.reason}. ` : ""}
-            Email is in test mode: nothing is delivered. Copy the text into your email, then mark it sent to log it
+            Email is in test mode: the app delivers nothing. Copy the text or open it in your own email app, then mark it sent to log it
             {chase ? " and pause this alert for 2 days." : "."}
           </DialogDescription>
         </DialogHeader>
@@ -57,7 +58,14 @@ export function MessageDialog({ orderId, chase, onClose }: { orderId: string; ch
           </Field>
         </div>
         <DialogFooter className="gap-2 sm:justify-between">
-          <CopyButton text={full} label="Copy email" />
+          <div className="flex flex-wrap gap-2">
+            <CopyButton text={full} label="Copy email" />
+            <Button variant="outline" asChild>
+              <a href={mailto} target="_blank" rel="noreferrer">
+                <MailIcon /> Open in email app
+              </a>
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>
               {chase ? "Not now" : "Skip"}

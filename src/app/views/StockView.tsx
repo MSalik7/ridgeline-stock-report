@@ -117,6 +117,19 @@ function Trend({ f }: { f: ProductRow["forecast"] }) {
   );
 }
 
+/** The flags the status badge can't show at the same time (SOP 4: say so when ordered units aren't enough). */
+function FlagNote({ f }: { f: ProductRow["forecast"] }) {
+  const text =
+    f.status === "out" && f.flags.reorderNow
+      ? f.flags.orderedNotEnough
+        ? "Reorder now, even with open orders"
+        : "Reorder now"
+      : f.flags.orderedNotEnough
+        ? "Even with open orders"
+        : null;
+  return text ? <div className="mt-1 text-[11px] text-st-reorder">{text}</div> : null;
+}
+
 /** "Out" for nothing in the warehouse, otherwise days of stock. */
 export function daysLeft(r: ProductRow) {
   const f = r.forecast;
@@ -219,7 +232,7 @@ function ProductTable({ rows }: { rows: ProductRow[] }) {
                 </td>
                 <td>
                   <StockBadge status={f.status} />
-                  {f.flags.orderedNotEnough && <div className="mt-1 text-[11px] text-st-reorder">Even with open orders</div>}
+                  <FlagNote f={f} />
                 </td>
                 <td className={cn("tnum text-right font-medium", f.flags.outOfStock && "text-st-out")}>{units(r.stock)}</td>
                 <td className="tnum text-right text-muted-foreground">{units(r.unshipped)}</td>
@@ -275,7 +288,10 @@ function ProductCards({ rows }: { rows: ProductRow[] }) {
                   <div className="truncate font-medium">{r.product.name}</div>
                   <div className="font-mono text-xs text-muted-foreground">{r.product.code}</div>
                 </div>
-                <StockBadge status={f.status} />
+                <div className="text-right">
+                  <StockBadge status={f.status} />
+                  <FlagNote f={f} />
+                </div>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
                 <Mini label="In warehouse" value={units(r.stock)} />

@@ -1,0 +1,9 @@
+node_modules
+dist
+artifact
+seed
+.claude
+.impeccable
+*.tsbuildinfo
+.env*
+.vercel

@@ -5,3 +5,6 @@ seed/
 *.tsbuildinfo
 .claude/
 .impeccable/
+
+.vercel
+.env*

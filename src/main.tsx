@@ -1,0 +1,61 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { DatabaseIcon, HardDriveIcon, LoaderIcon } from "lucide-react";
+import "./index.css";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
+import { Button } from "@/components/ui/button";
+import { App } from "@/app/App";
+import { AppProvider } from "@/app/context";
+import { DialogProvider } from "@/app/dialogs/DialogProvider";
+import { loadDemoIntoShared, startStore, switchToSandbox, type StoreState } from "@/app/store";
+
+void startStore();
+
+function Waiting({ store }: { store: StoreState }) {
+  if (store.mode === "empty") {
+    return (
+      <div className="grid min-h-dvh place-items-center px-4">
+        <div className="grid max-w-md gap-4 rounded-xl border bg-card p-6 text-center">
+          <DatabaseIcon className="mx-auto size-6 text-muted-foreground" />
+          <div>
+            <h1 className="text-lg font-semibold">No shared stock data yet</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Load the demo business (Ridgeline Coffee Supply: 6 products, 45 days of sales, supplier orders and arrivals) into shared storage, or try it
+              in a private copy first.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button variant="outline" onClick={() => switchToSandbox()}>
+              <HardDriveIcon /> Private copy
+            </Button>
+            <Button onClick={() => void loadDemoIntoShared()}>
+              <DatabaseIcon /> Load demo data
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="grid min-h-dvh place-items-center px-4">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <LoaderIcon className="size-4 animate-spin" />
+        {store.slow ? "Shared data is slow to answer. Still trying…" : "Loading stock data…"}
+      </div>
+    </div>
+  );
+}
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <TooltipProvider delayDuration={150}>
+      <AppProvider fallback={(s) => <Waiting store={s} />}>
+        <DialogProvider>
+          <App />
+        </DialogProvider>
+      </AppProvider>
+      <Toaster position="top-center" richColors closeButton />
+    </TooltipProvider>
+  </StrictMode>,
+);

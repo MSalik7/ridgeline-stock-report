@@ -123,6 +123,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
           {[
             { label: "Stock", href: "stock", icon: BoxesIcon },
             { label: "Supplier orders", href: "orders", icon: TruckIcon },
+            { label: "Supplier scorecard", href: "suppliers", icon: TruckIcon },
             { label: "Arrivals", href: "arrivals", icon: PackageCheckIcon },
             { label: "Stock history", href: "history", icon: HistoryIcon },
             { label: "Messages", href: "messages", icon: MailIcon },

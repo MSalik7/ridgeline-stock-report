@@ -2,7 +2,7 @@ import { useCallback, useContext, useState, type ReactNode } from "react";
 import { DialogContext as Ctx } from "../ctx";
 import type { ChaseKind } from "@/domain/types";
 import { NewOrderDialog, EditOrderDialog, TrackingDialog } from "./OrderDialogs";
-import { ArrivalDialog, MatchDialog } from "./ArrivalDialogs";
+import { ArrivalDialog, EditArrivalDialog, MatchDialog } from "./ArrivalDialogs";
 import { StockChangeDialog } from "./StockChangeDialog";
 import { MessageDialog } from "./MessageDialog";
 import { ChaseAllDialog } from "./ChaseAllDialog";
@@ -13,6 +13,7 @@ type Open =
   | { kind: "tracking"; orderId: string }
   | { kind: "arrival"; productId?: string; orderId?: string; units?: number }
   | { kind: "match"; arrivalId: string }
+  | { kind: "editArrival"; arrivalId: string }
   | { kind: "stockChange"; productId?: string }
   | { kind: "orderMessage"; orderId: string }
   | { kind: "chase"; orderId: string; chase: ChaseKind }
@@ -25,6 +26,7 @@ export interface Dialogs {
   tracking: (orderId: string) => void;
   arrival: (o?: { productId?: string; orderId?: string; units?: number }) => void;
   match: (arrivalId: string) => void;
+  editArrival: (arrivalId: string) => void;
   stockChange: (productId?: string) => void;
   orderMessage: (orderId: string) => void;
   chase: (orderId: string, chase: ChaseKind) => void;
@@ -41,6 +43,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     tracking: (orderId) => setOpen({ kind: "tracking", orderId }),
     arrival: (o) => setOpen({ kind: "arrival", ...o }),
     match: (arrivalId) => setOpen({ kind: "match", arrivalId }),
+    editArrival: (arrivalId) => setOpen({ kind: "editArrival", arrivalId }),
     stockChange: (productId) => setOpen({ kind: "stockChange", productId }),
     orderMessage: (orderId) => setOpen({ kind: "orderMessage", orderId }),
     chase: (orderId, chase) => setOpen({ kind: "chase", orderId, chase }),
@@ -61,6 +64,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
       {open?.kind === "tracking" && <TrackingDialog orderId={open.orderId} onClose={close} />}
       {open?.kind === "arrival" && <ArrivalDialog productId={open.productId} orderId={open.orderId} units={open.units} onClose={close} />}
       {open?.kind === "match" && <MatchDialog arrivalId={open.arrivalId} onClose={close} />}
+      {open?.kind === "editArrival" && <EditArrivalDialog arrivalId={open.arrivalId} onClose={close} />}
       {open?.kind === "stockChange" && <StockChangeDialog productId={open.productId} onClose={close} />}
       {open?.kind === "orderMessage" && <MessageDialog orderId={open.orderId} onClose={close} />}
       {open?.kind === "chase" && <MessageDialog orderId={open.orderId} chase={open.chase} onClose={close} />}

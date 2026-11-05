@@ -13,6 +13,7 @@ import { StageBar } from "../components/charts";
 import { EmptyState, PageHeader, go } from "../components/bits";
 import { units } from "../format";
 import { OrderSheet } from "./OrderSheet";
+import { OrdersTabs } from "./ScorecardView";
 
 export type StageFilter = "open" | "chase" | OrderStatus | "all";
 
@@ -83,6 +84,8 @@ export function OrdersView({ route }: { route: string }) {
           </Button>
         }
       />
+
+      <OrdersTabs active="orders" />
 
       <div className="grid gap-3">
         <div className="flex flex-wrap items-center gap-2">

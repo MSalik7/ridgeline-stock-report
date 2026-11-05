@@ -11,12 +11,13 @@ Demo: https://claude.ai/artifact/HwDgKgZ3mbvkBPokdmaXU9 · Code: this repo · Ru
 | **Stock** (home) | Q1–Q5, Q8, Q9 | **To do today** first: a ranked list (reorders, follow-ups, stock that runs out before the next delivery, unmatched arrivals), each item with the one button that resolves it, plus "Waiting on suppliers" and "Done today". Below it, every product sorted worst first, with filters: warehouse stock, sold-not-shipped, sales per day with trend, days of stock with a runway bar, units on order, reorder-by and suggested order. |
 | **Product** | Q3–Q6 | One callout per flag, written as a sentence ("Reorder now, even counting open orders…"). **Stock outlook** charts past stock, the projection at today's pace, when each open order should land, and red bands where there'd be nothing to sell. **Try an order** updates the days of stock as you type, with a runway bar marked at the reorder line and the target. A 30-day sales chart shades the exact 7-day window, split into the prior 4 and last 3 days that the trend factor compares. **How the numbers are worked out** shows every formula with this product's real values. |
 | **Supplier orders** | Q7, Q8 | Filter by product and stage. Each order's stage bar shows where its units are: arrived, on the way, in production, placed, or not coming. The detail panel holds every action (confirm, tracking, arrival, edit, close, cancel, reopen, delete with confirmation), tracking linked to the carrier, the order message, follow-ups, and a who/what/when history. |
-| **Arrivals** | Q9 | Unmatched arrivals pinned at the top. Recording an arrival previews the oldest-first match before you save. Hand matching splits units across orders or marks them "not from an order". |
+| **Arrivals** | Q9 | Unmatched arrivals pinned at the top. Recording an arrival previews the oldest-first match before you save. Hand matching splits units across orders or marks them "not from an order". An arrival typed in wrong can be edited (the dialog says what happens to its match first) or deleted; both are logged. |
+| **Supplier scorecard** | Q7, Q8 | Per supplier: days to confirm, real lead time against the setting, on-time share, short shipments, late orders now, and a one-word verdict. "Lead times that don't match reality" turns that into a one-click fix: for example, the grinder's supplier really takes 45 days, not 35. |
 | **Stock history** | Q10 | A ledger per product: count, arrivals, moves between orders, manual sales and adjustments, and daily shipments. Each line shows the change, the stock after it, why, and who. |
 | **Messages, Setup** | | Test-mode outbox. Forecast defaults with per-product overrides, products (SKUs and bundles), suppliers, reorder alert emails, data sync. |
 | **Supplier portal** | supplier | Only that supplier's orders. Only two actions: confirm, add tracking. |
 
-**Phone (390 px):** tables become cards, navigation moves to a bottom tab bar, and dialogs and panels go full width. Nothing scrolls sideways.
+**Phone (390 px):** tables become cards, navigation moves to a bottom tab bar with a **+** in the thumb zone (record an arrival, new order, log a change), and dialogs and panels go full width. Nothing scrolls sideways.
 
 **Speed and safety:** every action's toast offers **Undo**, which restores exactly the records it changed. **Ctrl/Cmd+K** (or /) searches products, orders, arrivals and actions. N, A and L open a new order, an arrival and a stock change. The stock report exports as CSV or copies as a table for email or chat. "Follow up on all" prepares every due chase message at once.
 
@@ -52,10 +53,11 @@ So no stored number can drift from its source, and changing a rule means changin
 - Sales and shipments come from a simulated store feed (deterministic, so numbers stay stable). There is no CSV import.
 - Shared writes are last-writer-wins per document, with no multi-document transactions.
 - Products can't be deleted, because that would orphan their orders.
+- The scorecard's real lead time uses the first units to arrive. With a handful of orders per supplier, it's a signal, not a statistic.
 
 ## 3. How I checked the numbers against section 4
 
-- **82 tests in total.** **44 unit tests** (`src/domain/rules.test.ts`). Each test name carries the hand calculation. For example, with sales of 10, 10, 10, 10, 14, 14, 14:
+- **90 tests in total.** **44 unit tests** (`src/domain/rules.test.ts`). Each test name carries the hand calculation. For example, with sales of 10, 10, 10, 10, 14, 14, 14:
   - trend = (42/3)/(40/4) = 1.4
   - adjusted burn = 11.714 × 1.4 = 16.4
   - suggested order = (60+45) × 16.4 − 500 = 1222
@@ -69,7 +71,7 @@ So no stored number can drift from its source, and changing a rule means changin
   - all three chase rules at their exact boundaries (2 vs 1 day, 10 vs 9 days, more than 10 vs 10), plus the 2-day repeat
   - oldest-first matching and spill-over, bundles and sold-not-shipped
   - the Denver day boundary and the DST change
-- **9 outlook and to-do tests**: the projection's run-out day matches the SOP's "sells out on", plus arrival estimates and the ranking. **4 undo tests** check that applying an action and then its undo gives back identical data.
+- **9 outlook and to-do tests**: the projection's run-out day matches the SOP's "sells out on", plus arrival estimates and the ranking. **4 undo tests** check that applying an action and then its undo gives back identical data. **8 tests** cover arrival edits and deletes and the scorecard figures.
 - **25 demo-data tests** generate the business on four different dates, including summer time. They assert that every flag, stage and chase type appears and that stock never goes negative. They also check that syncing four days later keeps every forecast live.
 - **In the app**, each product page shows its working ("93 ÷ 7 = 13.3", "(49 ÷ 3) ÷ (44 ÷ 4) = 1.48"), so anyone can re-check by hand.
 

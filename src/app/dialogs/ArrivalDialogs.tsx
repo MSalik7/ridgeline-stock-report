@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { autoMatch, openCapacities, type OrderCapacity } from "@/domain/arrivals";
 import { formatDay } from "@/domain/dates";
-import { recordArrival, rematchArrival } from "@/domain/mutations";
+import { editArrival, recordArrival, rematchArrival } from "@/domain/mutations";
 import type { Allocation, SupplierOrder } from "@/domain/types";
 import { cn } from "@/lib/utils";
 import { useApp } from "../context";
@@ -269,6 +269,68 @@ export function MatchDialog({ arrivalId, onClose }: { arrivalId: string; onClose
               Save match
             </Button>
           </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function EditArrivalDialog({ arrivalId, onClose }: { arrivalId: string; onClose: () => void }) {
+  const { data, report, run } = useApp();
+  const arrival = data.arrivals.find((a) => a.id === arrivalId);
+  const [unitsText, setUnits] = useState(String(arrival?.units ?? ""));
+  const [date, setDate] = useState(arrival?.receivedOn ?? report.today);
+  const [note, setNote] = useState(arrival?.note ?? "");
+  if (!arrival) return null;
+  const matched = arrival.allocations.reduce((s, a) => s + a.units, 0);
+  const n = toInt(unitsText) || 0;
+  const product = data.products.find((p) => p.id === arrival.productId);
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit {arrival.name}</DialogTitle>
+          <DialogDescription>
+            {product?.name}. Fix a count or date entered wrong; the change is recorded in the arrival's history.
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          id="edit-arrival-form"
+          className="grid gap-4"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const ok = await run((s, a, now) => editArrival(s, arrivalId, { units: n, receivedOn: date, note }, a, now), `${arrival.name} updated`);
+            if (ok) onClose();
+          }}
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <Field id="ea-units" label="Units received">
+              <UnitsInput id="ea-units" value={unitsText} onChange={setUnits} autoFocus />
+            </Field>
+            <Field id="ea-date" label="Received on">
+              <Input id="ea-date" type="date" value={date} max={report.today} onChange={(e) => setDate(e.target.value)} />
+            </Field>
+          </div>
+          {n > 0 && n !== arrival.units && (
+            <p className={cn("text-sm", n < matched ? "text-st-urgent" : "text-muted-foreground")}>
+              {n < matched
+                ? `${fmtUnits(matched)} units are matched to orders. Saving trims ${fmtUnits(matched - n)} from the match, newest order first.`
+                : n > arrival.units
+                  ? `The extra ${fmtUnits(n - arrival.units)} units start unmatched, so you can match them next.`
+                  : `Stock goes down by ${fmtUnits(arrival.units - n)}.`}
+            </p>
+          )}
+          <Field id="ea-note" label="Note">
+            <Input id="ea-note" value={note} onChange={(e) => setNote(e.target.value)} />
+          </Field>
+        </form>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form="edit-arrival-form" disabled={n <= 0}>
+            Save changes
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

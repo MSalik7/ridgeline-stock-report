@@ -1,4 +1,7 @@
-import { PackagePlusIcon, TriangleAlertIcon } from "lucide-react";
+import { useState } from "react";
+import { MoreHorizontalIcon, PackagePlusIcon, PencilIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { deleteArrival } from "@/domain/mutations";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { unmatchedUnits } from "@/domain/arrivals";
@@ -6,7 +9,7 @@ import { formatDay } from "@/domain/dates";
 import type { Arrival } from "@/domain/types";
 import { useApp } from "../context";
 import { useDialogs } from "../dialogs/DialogProvider";
-import { EmptyState, PageHeader, Who } from "../components/bits";
+import { Confirm, EmptyState, PageHeader, Who } from "../components/bits";
 import { units } from "../format";
 
 export function ArrivalsView() {
@@ -29,7 +32,7 @@ export function ArrivalsView() {
       {report.unmatchedArrivals.length > 0 && (
         <section className="rounded-xl border border-st-urgent/40 bg-st-urgent-bg">
           <div className="flex items-center gap-2 border-b border-st-urgent/20 px-4 py-3 text-sm font-semibold text-st-urgent">
-            <TriangleAlertIcon className="size-4" /> {report.unmatchedArrivals.length} arrival{report.unmatchedArrivals.length === 1 ? "" : "s"} need matching
+            <TriangleAlertIcon className="size-4" /> {report.unmatchedArrivals.length} {report.unmatchedArrivals.length === 1 ? "arrival needs" : "arrivals need"} matching
           </div>
           <ul className="divide-y divide-st-urgent/20">
             {report.unmatchedArrivals.map(({ arrival, units: n }) => (
@@ -71,8 +74,10 @@ function productName(data: ReturnType<typeof useApp>["data"], a: Arrival) {
 }
 
 function ArrivalRow({ a }: { a: Arrival }) {
-  const { data } = useApp();
+  const { data, run } = useApp();
   const dialogs = useDialogs();
+  const [askDelete, setAskDelete] = useState(false);
+  const fed = a.allocations.filter((al) => al.orderId && al.units > 0);
   const left = unmatchedUnits(a);
   const names = new Map(data.orders.map((o) => [o.id, o]));
   const last = a.history[a.history.length - 1];
@@ -118,15 +123,48 @@ function ArrivalRow({ a }: { a: Arrival }) {
         </div>
         <div className="mt-1 truncate text-xs text-muted-foreground">
           {a.note && `${a.note} · `}
-          {last?.action === "Changed match" ? "Match changed by " : "Recorded by "}
+          {last?.action === "Changed match" ? "Match changed by " : last?.action === "Edited arrival" ? "Edited by " : "Recorded by "}
           <Who actor={last?.actor ?? null} />
         </div>
       </div>
-      <div>
+      <div className="flex gap-1.5">
         <Button variant="outline" size="sm" onClick={() => dialogs.match(a.id)}>
           Change match
         </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label={`More actions for ${a.name}`}>
+              <MoreHorizontalIcon />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => dialogs.editArrival(a.id)}>
+              <PencilIcon /> Edit units, date, note
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onSelect={() => setAskDelete(true)}>
+              <Trash2Icon /> Delete arrival
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+      <Confirm
+        open={askDelete}
+        onOpenChange={setAskDelete}
+        title={`Delete ${a.name}?`}
+        body={
+          <>
+            Use this for an arrival entered by mistake. Warehouse stock drops by {units(a.units)}
+            {fed.length
+              ? `, and ${fed.map((al) => `${names.get(al.orderId!)?.name ?? "an order"} (${units(al.units)})`).join(", ")} go back to waiting for those units`
+              : ""}
+            . You can undo it right after.
+          </>
+        }
+        confirm="Delete arrival"
+        destructive
+        onConfirm={() => void run((s, actor, now) => deleteArrival(s, a.id, actor, now), `${a.name} deleted`)}
+      />
     </li>
   );
 }

@@ -399,6 +399,79 @@ export function rematchArrival(
   });
 }
 
+export interface ArrivalEdit {
+  units: number;
+  receivedOn: StoreDate;
+  note: string;
+}
+
+/**
+ * Fixes an arrival typed in wrong. Extra units start unmatched. Fewer units
+ * than are matched trim the match: "not from an order" first, then the
+ * newest orders, so the oldest orders keep what they received.
+ */
+export function editArrival(state: AppState, arrivalId: string, edit: ArrivalEdit, actor: Actor, now: Date): ChangeSet {
+  const arrival = state.arrivals.find((a) => a.id === arrivalId);
+  if (!arrival) throw new ActionError("That arrival no longer exists.");
+  wholePositive(edit.units, "Units");
+  if (edit.receivedOn > storeDateOf(now)) throw new ActionError("The arrival date can't be in the future.");
+
+  const orderedOn = new Map(state.orders.map((o) => [o.id, o.orderedOn]));
+  const names = new Map(state.orders.map((o) => [o.id, o.name]));
+  const allocations = arrival.allocations.map((a) => ({ ...a }));
+  let over = allocatedUnits({ allocations }) - edit.units;
+  const trimmed: string[] = [];
+  const releaseOrder = [...allocations].sort((a, b) => {
+    if (!a.orderId) return -1;
+    if (!b.orderId) return 1;
+    return (orderedOn.get(b.orderId) ?? "").localeCompare(orderedOn.get(a.orderId) ?? "");
+  });
+  for (const al of releaseOrder) {
+    if (over <= 0) break;
+    const take = Math.min(al.units, over);
+    al.units -= take;
+    over -= take;
+    trimmed.push(`${al.orderId ? (names.get(al.orderId) ?? "deleted order") : "not from an order"} −${take}`);
+  }
+
+  const changes: string[] = [];
+  if (edit.units !== arrival.units) changes.push(`units ${arrival.units} → ${edit.units}`);
+  if (edit.receivedOn !== arrival.receivedOn) changes.push(`received ${arrival.receivedOn} → ${edit.receivedOn}`);
+  if (edit.note.trim() !== arrival.note) changes.push("note updated");
+  if (!changes.length) return empty();
+  const detail = changes.join(", ") + (trimmed.length ? `. Match trimmed: ${trimmed.join(", ")}` : "");
+  return put("arrivals", arrival.id, {
+    ...arrival,
+    units: edit.units,
+    receivedOn: edit.receivedOn,
+    note: edit.note.trim(),
+    allocations: normalizeAllocations(allocations),
+    history: [...arrival.history, entry(actor, now, "Edited arrival", detail)],
+  });
+}
+
+/**
+ * Removes an arrival entered by mistake. Stock drops by its units and the
+ * orders it fed count those units as still to come; each order's history
+ * keeps a note of it.
+ */
+export function deleteArrival(state: AppState, arrivalId: string, actor: Actor, now: Date): ChangeSet {
+  const arrival = state.arrivals.find((a) => a.id === arrivalId);
+  if (!arrival) throw new ActionError("That arrival no longer exists.");
+  const out: ChangeSet = { put: [], remove: [{ collection: "arrivals", id: arrival.id }], config: [] };
+  for (const al of arrival.allocations) {
+    if (!al.orderId || al.units <= 0) continue;
+    const order = state.orders.find((o) => o.id === al.orderId);
+    if (!order) continue;
+    out.put.push({
+      collection: "orders",
+      id: order.id,
+      data: withHistory(order, entry(actor, now, "Arrival deleted", `${arrival.name} removed, ${al.units} units no longer count as arrived`)),
+    });
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- stock
 
 export function logStockChange(

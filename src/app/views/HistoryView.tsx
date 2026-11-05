@@ -14,7 +14,7 @@ type Kind = "all" | "arrival" | "shipped" | "manual" | "rematch";
 const KINDS: { value: Kind; label: string; match: LedgerKind[] }[] = [
   { value: "all", label: "Everything", match: [] },
   { value: "arrival", label: "Arrivals", match: ["arrival", "count"] },
-  { value: "rematch", label: "Moves between orders", match: ["rematch"] },
+  { value: "rematch", label: "Moves and corrections", match: ["rematch", "correction"] },
   { value: "manual", label: "Manual changes", match: ["manual_sale", "adjustment"] },
   { value: "shipped", label: "Shipped to customers", match: ["shipped"] },
 ];

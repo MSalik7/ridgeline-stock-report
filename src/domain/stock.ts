@@ -2,7 +2,7 @@ import { storeDateOf } from "./dates";
 import { unitsShippedByDay } from "./sales";
 import type { Actor, AppState, Product, StoreDate, Timestamp } from "./types";
 
-export type LedgerKind = "count" | "arrival" | "shipped" | "manual_sale" | "adjustment" | "rematch";
+export type LedgerKind = "count" | "arrival" | "shipped" | "manual_sale" | "adjustment" | "rematch" | "correction";
 
 export const LEDGER_LABEL: Record<LedgerKind, string> = {
   count: "Stock count",
@@ -11,6 +11,7 @@ export const LEDGER_LABEL: Record<LedgerKind, string> = {
   manual_sale: "Manual sale",
   adjustment: "Adjustment",
   rematch: "Moved between orders",
+  correction: "Arrival corrected",
 };
 
 /** One line of a product's stock history: what changed, when and why. */
@@ -34,6 +35,7 @@ const KIND_ORDER: Record<LedgerKind, number> = {
   count: 0,
   arrival: 1,
   rematch: 2,
+  correction: 2,
   manual_sale: 3,
   adjustment: 3,
   shipped: 4,
@@ -79,13 +81,14 @@ export function stockLedger(state: AppState, product: Product): LedgerEntry[] {
       ref: { arrivalId: a.id, orderIds: a.allocations.flatMap((al) => (al.orderId ? [al.orderId] : [])) },
     });
     for (const [i, h] of a.history.entries()) {
-      if (h.action !== "Changed match") continue;
+      if (h.action !== "Changed match" && h.action !== "Edited arrival") continue;
+      // The arrival line already carries the corrected units; this line records when and why.
       rows.push({
         key: `rem-${a.id}-${i}`,
         productId: product.id,
         date: maxDate(storeDateOf(h.at), a.receivedOn),
         at: h.at,
-        kind: "rematch",
+        kind: h.action === "Edited arrival" ? "correction" : "rematch",
         change: 0,
         why: `${a.name}: ${h.detail ?? "match changed"}`,
         actor: h.actor,

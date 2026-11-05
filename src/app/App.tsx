@@ -2,12 +2,15 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeftRightIcon,
   BoxesIcon,
+  ClipboardPenIcon,
   CloudIcon,
   HardDriveIcon,
   HistoryIcon,
   MailIcon,
   MenuIcon,
   PackageCheckIcon,
+  PackagePlusIcon,
+  PlusIcon,
   RefreshCwIcon,
   SearchIcon,
   Settings2Icon,
@@ -38,6 +41,7 @@ import { HistoryView } from "./views/HistoryView";
 import { MessagesView } from "./views/MessagesView";
 import { SetupView } from "./views/SetupView";
 import { SupplierPortal } from "./views/SupplierPortal";
+import { ScorecardView } from "./views/ScorecardView";
 import { CommandPalette } from "./CommandPalette";
 import { useDialogs, type Dialogs } from "./dialogs/DialogProvider";
 
@@ -58,7 +62,7 @@ function useHash() {
 type Section = "stock" | "orders" | "arrivals" | "history" | "messages" | "setup";
 
 function sectionOf(route: string): Section {
-  if (route.startsWith("order")) return "orders";
+  if (route.startsWith("order") || route === "suppliers") return "orders";
   if (route.startsWith("arrivals")) return "arrivals";
   if (route.startsWith("history")) return "history";
   if (route === "messages") return "messages";
@@ -77,6 +81,7 @@ export function App() {
   let page: ReactNode;
   if (supplier) page = <SupplierPortal />;
   else if (route.startsWith("product-")) page = <ProductView id={route.slice(8)} />;
+  else if (route === "suppliers") page = <ScorecardView />;
   else if (section === "orders") page = <OrdersView route={route} />;
   else if (section === "arrivals") page = <ArrivalsView />;
   else if (section === "history") page = <HistoryView productId={route.startsWith("history-") ? route.slice(8) : null} />;
@@ -208,50 +213,99 @@ function Sidebar({ section, supplier }: { section: Section; supplier: boolean })
 
 function BottomNav({ section }: { section: Section }) {
   const nav = useNav();
+  const dialogs = useDialogs();
   const [more, setMore] = useState(false);
-  const main = nav.slice(0, 4);
-  const extra = nav.slice(4);
+  const [quick, setQuick] = useState(false);
+  const byId = (id: Section) => nav.find((n) => n.id === id)!;
+  const left = [byId("stock"), byId("orders")];
+  const right = [byId("arrivals")];
+  const extra = nav.filter((n) => !["stock", "orders", "arrivals"].includes(n.id));
+  const tab = (n: (typeof nav)[number]) => (
+    <a
+      key={n.id}
+      href={n.href}
+      aria-current={section === n.id ? "page" : undefined}
+      className={cn(
+        "relative flex flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px]",
+        section === n.id ? "font-medium text-foreground" : "text-muted-foreground",
+      )}
+    >
+      <n.icon className="size-5" />
+      {n.short ?? n.label}
+      {n.count > 0 && (
+        <span className="tnum absolute top-1 left-1/2 ml-2 rounded-full bg-st-out px-1 text-[10px] leading-4 font-semibold text-white dark:text-background">
+          {n.count}
+        </span>
+      )}
+    </a>
+  );
+  // Quick actions close their sheet first so the dialog gets focus.
+  const quickAct = (f: () => void) => () => {
+    setQuick(false);
+    window.setTimeout(f, 120);
+  };
   return (
     <>
       <nav
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background/95 pr-[max(8px,env(safe-area-inset-right,0px))] pb-[env(safe-area-inset-bottom,0px)] pl-[max(8px,env(safe-area-inset-left,0px))] backdrop-blur lg:hidden"
       >
-        {main.map((n) => (
-          <a
-            key={n.id}
-            href={n.href}
-            aria-current={section === n.id ? "page" : undefined}
-            className={cn(
-              "relative flex flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px]",
-              section === n.id ? "font-medium text-foreground" : "text-muted-foreground",
-            )}
+        {left.map(tab)}
+        <div className="flex items-center justify-center">
+          <button
+            onClick={() => setQuick(true)}
+            aria-label="New order, arrival or stock change"
+            className="grid size-11 place-items-center rounded-full bg-foreground text-background shadow-md transition-transform active:scale-95 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
           >
-            <n.icon className="size-5" />
-            {n.short ?? n.label}
-            {n.count > 0 && (
-              <span className="tnum absolute top-1 left-1/2 ml-2 rounded-full bg-st-out px-1 text-[10px] leading-4 font-semibold text-white dark:text-background">
-                {n.count}
-              </span>
-            )}
-          </a>
-        ))}
+            <PlusIcon className="size-5" />
+          </button>
+        </div>
+        {right.map(tab)}
         <button
           onClick={() => setMore(true)}
           className={cn(
             "flex flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px]",
-            section === "messages" || section === "setup" ? "font-medium text-foreground" : "text-muted-foreground",
+            extra.some((n) => n.id === section) ? "font-medium text-foreground" : "text-muted-foreground",
           )}
         >
           <MenuIcon className="size-5" />
           More
         </button>
       </nav>
+      <Sheet open={quick} onOpenChange={setQuick}>
+        <SheetContent side="bottom" className="rounded-t-2xl pb-[max(16px,env(safe-area-inset-bottom,0px))]">
+          <SheetHeader>
+            <SheetTitle>Add</SheetTitle>
+            <SheetDescription>Record what just happened.</SheetDescription>
+          </SheetHeader>
+          <div className="grid gap-2 px-4">
+            {[
+              { label: "Record an arrival", hint: "A delivery just landed at the warehouse", icon: PackagePlusIcon, run: () => dialogs.arrival() },
+              { label: "New supplier order", hint: "Order more from a supplier", icon: PlusIcon, run: () => dialogs.newOrder() },
+              { label: "Log a sale or adjustment", hint: "Wholesale, damage, a recount", icon: ClipboardPenIcon, run: () => dialogs.stockChange() },
+            ].map((a) => (
+              <button
+                key={a.label}
+                onClick={quickAct(a.run)}
+                className="flex min-h-14 items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left active:bg-accent"
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted">
+                  <a.icon className="size-4" />
+                </span>
+                <span>
+                  <span className="block text-sm font-medium">{a.label}</span>
+                  <span className="block text-xs text-muted-foreground">{a.hint}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
       <Sheet open={more} onOpenChange={setMore}>
         <SheetContent side="bottom" className="rounded-t-2xl pb-[max(16px,env(safe-area-inset-bottom,0px))]">
           <SheetHeader>
             <SheetTitle>More</SheetTitle>
-            <SheetDescription>Messages, setup, data and who you're viewing as.</SheetDescription>
+            <SheetDescription>History, messages, setup, data and who you're viewing as.</SheetDescription>
           </SheetHeader>
           <div className="grid gap-3 px-4">
             <div className="grid gap-1">
@@ -401,7 +455,7 @@ function ModeNote() {
   const { store, viewer } = useApp();
   const [hidden, setHidden] = useState(() => {
     try {
-      return sessionStorage.getItem("ridgeline-stock:mode-note") === store.sandboxReason;
+      return localStorage.getItem("ridgeline-stock:mode-note") === store.sandboxReason;
     } catch {
       return false;
     }
@@ -420,7 +474,7 @@ function ModeNote() {
         onClick={() => {
           setHidden(true);
           try {
-            sessionStorage.setItem("ridgeline-stock:mode-note", store.sandboxReason ?? "");
+            localStorage.setItem("ridgeline-stock:mode-note", store.sandboxReason ?? "");
           } catch {
             /* ignore */
           }

@@ -1,5 +1,6 @@
 import {
   BoxesIcon,
+  PanelLeftIcon,
   CircleDollarSignIcon,
   ClipboardCopyIcon,
   ClipboardPenIcon,
@@ -35,7 +36,17 @@ import { copyStockTable, downloadStockCsv } from "./export";
 import { cn } from "@/lib/utils";
 
 /** Jump to any product, order or page, or run an action, by typing. */
-export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+export function CommandPalette({
+  open,
+  onOpenChange,
+  sidebarCollapsed,
+  onToggleSidebar,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  sidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
+}) {
   const { report, data, run } = useApp();
   const dialogs = useDialogs();
   const act = (f: () => void) => () => {
@@ -67,6 +78,9 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               <MailIcon /> Follow up on all {report.chaseDue.length} due orders
             </CommandItem>
           )}
+          <CommandItem value="toggle sidebar collapse expand rail" onSelect={act(onToggleSidebar)}>
+            <PanelLeftIcon /> {sidebarCollapsed ? "Expand the sidebar" : "Collapse the sidebar"} <CommandShortcut>Ctrl B</CommandShortcut>
+          </CommandItem>
           <CommandItem value="sync sales stock refresh data" onSelect={act(() => void run((s, _a, n) => syncFeed(s, n), "Sales and stock synced", { undo: false }))}>
             <RefreshCwIcon /> Sync sales and stock
           </CommandItem>

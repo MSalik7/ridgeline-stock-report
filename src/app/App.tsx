@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeftRightIcon,
   BoxesIcon,
+  ChevronLeftIcon,
   CircleDollarSignIcon,
   ClipboardPenIcon,
   CloudIcon,
@@ -29,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { syncFeed } from "@/data/feed";
 import { ago, formatStoreClock, formatWeekday } from "@/domain/dates";
@@ -82,6 +84,7 @@ export function App() {
   const supplier = viewer.role === "supplier";
   const section = sectionOf(route);
   const [palette, setPalette] = useState(false);
+  const [collapsed, toggleSidebar] = useSidebar();
   useShortcuts(!supplier, setPalette);
 
   let page: ReactNode;
@@ -97,9 +100,14 @@ export function App() {
   else page = <StockView />;
 
   return (
-    <div className="relative isolate min-h-full lg:grid lg:grid-cols-[15rem_1fr]">
+    <div
+      className={cn(
+        "relative isolate min-h-full lg:grid lg:transition-[grid-template-columns] lg:duration-300 lg:ease-[cubic-bezier(0.22,1,0.36,1)]",
+        collapsed ? "lg:grid-cols-[3.5rem_1fr]" : "lg:grid-cols-[15rem_1fr]",
+      )}
+    >
       <CoffeeBackdrop />
-      <Sidebar section={section} supplier={supplier} />
+      <Sidebar section={section} supplier={supplier} collapsed={collapsed} onToggle={toggleSidebar} />
       <div className="flex min-w-0 flex-col">
         <MobileTopBar staff={!supplier} onSearch={supplier ? undefined : () => setPalette(true)} />
         <main className="mx-auto w-full max-w-[90rem] min-w-0 flex-1 pl-[max(16px,env(safe-area-inset-left,0px))] pr-[max(16px,env(safe-area-inset-right,0px))] pt-4 pb-28 sm:pt-6 lg:px-8 lg:pb-12">
@@ -111,12 +119,58 @@ export function App() {
         </main>
       </div>
       {!supplier && <BottomNav section={section} />}
-      {!supplier && <CommandPalette open={palette} onOpenChange={setPalette} />}
+      {!supplier && <CommandPalette open={palette} onOpenChange={setPalette} sidebarCollapsed={collapsed} onToggleSidebar={toggleSidebar} />}
     </div>
   );
 }
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const SIDEBAR_KEY = "ridgeline-stock:sidebar";
+
+/** Laptop sidebar: full, or a slim icon rail. Ctrl/Cmd+B toggles; each device remembers. */
+function useSidebar(): [boolean, () => void] {
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_KEY) === "collapsed";
+    } catch {
+      return false;
+    }
+  });
+  const toggle = useCallback(() => {
+    setCollapsed((c) => {
+      try {
+        localStorage.setItem(SIDEBAR_KEY, c ? "open" : "collapsed");
+      } catch {
+        /* ignore */
+      }
+      return !c;
+    });
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== "b") return;
+      if ((e.target as HTMLElement | null)?.closest("input, textarea, select, [contenteditable=true]")) return;
+      e.preventDefault();
+      toggle();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggle]);
+  return [collapsed, toggle];
+}
+
+/** Hover label for the icon rail; plain children when the sidebar is open. */
+function RailTip({ show, label, children }: { show: boolean; label: ReactNode; children: ReactNode }) {
+  if (!show) return <>{children}</>;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="right" sideOffset={10}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 /**
  * Keyboard: Ctrl/Cmd+K or / opens search; N new order, A arrival, L log change.
@@ -165,16 +219,16 @@ function useNav() {
   ];
 }
 
-function Brand() {
+function Brand({ compact = false }: { compact?: boolean }) {
   const { data } = useApp();
   return (
-    <a href="#stock" className="flex items-center gap-2.5">
+    <a href="#stock" className="flex items-center gap-2.5" aria-label={compact ? `${data.settings.storeName}, stock report` : undefined}>
       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-foreground text-background">
         <svg viewBox="0 0 24 24" className="size-4" aria-hidden>
           <path d="M3 18 9 9l4 5 3-4 5 8z" fill="currentColor" />
         </svg>
       </span>
-      <span className="min-w-0 leading-tight">
+      <span className={cn("min-w-0 leading-tight whitespace-nowrap transition-opacity duration-200", compact && "opacity-0")} aria-hidden={compact || undefined}>
         <span className="block truncate text-sm font-semibold">{data.settings.storeName}</span>
         <span className="block text-xs text-muted-foreground">Stock report</span>
       </span>
@@ -182,40 +236,87 @@ function Brand() {
   );
 }
 
-function Sidebar({ section, supplier }: { section: Section; supplier: boolean }) {
+/**
+ * Laptop sidebar. Collapsing narrows it to a 56 px rail: the content keeps a
+ * fixed 240 px width underneath and is clipped, so icons never move while
+ * the width animates; labels fade and counts become badges on the icons.
+ */
+function Sidebar({ section, supplier, collapsed, onToggle }: { section: Section; supplier: boolean; collapsed: boolean; onToggle: () => void }) {
   const nav = useNav();
+  const toggleLabel = collapsed ? "Expand sidebar" : "Collapse sidebar";
   return (
-    <aside className="sticky top-0 hidden h-dvh flex-col border-r bg-sidebar/60 backdrop-blur-2xl lg:flex">
-      <div className="px-4 pt-5 pb-4">
-        <Brand />
+    <aside className="sticky top-0 z-20 hidden h-dvh lg:block">
+      <div id="main-sidebar" className="h-full overflow-hidden border-r bg-sidebar/60 backdrop-blur-2xl">
+        <div className="flex h-full w-60 flex-col">
+          <div className="px-3 pt-5 pb-4">
+            <Brand compact={collapsed} />
+          </div>
+          <nav className="grid gap-0.5 px-2" aria-label="Main">
+            {supplier ? (
+              <RailTip show={collapsed} label="My orders">
+                <span className={cn("flex h-9 items-center gap-3 rounded-md bg-accent px-3 text-sm font-medium", collapsed ? "w-10" : "w-full")}>
+                  <TruckIcon className="size-4 shrink-0" />
+                  <span className={cn("whitespace-nowrap transition-opacity duration-200", collapsed && "opacity-0")}>My orders</span>
+                </span>
+              </RailTip>
+            ) : (
+              nav.map((n) => (
+                <Fragment key={n.id}>
+                  <RailTip show={collapsed} label={n.count ? `${n.label} · ${n.count}` : n.label}>
+                    <a
+                      href={n.href}
+                      aria-current={section === n.id ? "page" : undefined}
+                      aria-label={collapsed ? (n.count ? `${n.label}, ${n.count}` : n.label) : undefined}
+                      className={cn(
+                        "relative flex h-9 items-center gap-3 rounded-md px-3 text-sm transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+                        collapsed ? "w-10" : "w-full",
+                        section === n.id ? "bg-accent font-medium text-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      <n.icon className="size-4 shrink-0" />
+                      <span className={cn("flex-1 whitespace-nowrap transition-opacity duration-200", collapsed && "opacity-0")} aria-hidden={collapsed || undefined}>
+                        {n.label}
+                      </span>
+                      {!collapsed && <Count n={n.count} tone={n.alert ? "alert" : "muted"} />}
+                      {collapsed && n.count > 0 && (
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "tnum absolute top-0.5 right-0.5 grid h-3.5 min-w-3.5 place-items-center rounded-full px-0.5 text-[9px] leading-none font-semibold ring-2 ring-sidebar",
+                            n.alert ? "bg-st-out text-white dark:text-background" : "bg-muted-foreground text-background",
+                          )}
+                        >
+                          {n.count}
+                        </span>
+                      )}
+                    </a>
+                  </RailTip>
+                </Fragment>
+              ))
+            )}
+          </nav>
+          <div className={cn("mt-auto grid border-t", collapsed ? "gap-1 px-2 py-3" : "gap-3 p-3")}>
+            <SyncStatus compact={collapsed} />
+            <RoleSwitcher compact={collapsed} />
+          </div>
+        </div>
       </div>
-      <nav className="grid gap-0.5 px-2" aria-label="Main">
-        {supplier ? (
-          <span className="flex h-9 items-center gap-2.5 rounded-md bg-accent px-2.5 text-sm font-medium">
-            <TruckIcon className="size-4" /> My orders
-          </span>
-        ) : (
-          nav.map((n) => (
-            <a
-              key={n.id}
-              href={n.href}
-              aria-current={section === n.id ? "page" : undefined}
-              className={cn(
-                "flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
-                section === n.id ? "bg-accent font-medium text-foreground" : "text-muted-foreground",
-              )}
-            >
-              <n.icon className="size-4" />
-              <span className="flex-1">{n.label}</span>
-              <Count n={n.count} tone={n.alert ? "alert" : "muted"} />
-            </a>
-          ))
-        )}
-      </nav>
-      <div className="mt-auto grid gap-3 border-t p-3">
-        <SyncStatus />
-        <RoleSwitcher />
-      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onToggle}
+            aria-label={toggleLabel}
+            aria-expanded={!collapsed}
+            aria-controls="main-sidebar"
+            className="absolute top-6 -right-3 z-10 grid size-6 place-items-center rounded-full border bg-background text-muted-foreground shadow-sm transition-[color,transform,box-shadow] duration-200 hover:scale-110 hover:text-foreground hover:shadow-md focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none active:scale-95"
+          >
+            <ChevronLeftIcon className={cn("size-3.5 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]", collapsed && "rotate-180")} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
+          {toggleLabel} <kbd className="ml-1 rounded border border-background/30 px-1 font-mono text-[10px]">{isMac ? "⌘B" : "Ctrl B"}</kbd>
+        </TooltipContent>
+      </Tooltip>
     </aside>
   );
 }
@@ -336,7 +437,7 @@ function BottomNav({ section }: { section: Section }) {
 function MobileTopBar({ onSearch, staff }: { onSearch?: () => void; staff: boolean }) {
   const { now, report } = useApp();
   return (
-    <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 flex h-14 items-center justify-between gap-2 border-b bg-background/70 sm:gap-3 pl-[max(16px,env(safe-area-inset-left,0px))] pr-[max(16px,env(safe-area-inset-right,0px))] backdrop-blur lg:static lg:h-12 lg:bg-transparent lg:px-8 lg:backdrop-blur-none">
+    <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 flex h-14 items-center justify-between gap-2 border-b bg-background/70 sm:gap-3 pl-[max(16px,env(safe-area-inset-left,0px))] pr-[max(16px,env(safe-area-inset-right,0px))] backdrop-blur lg:static lg:z-auto lg:h-12 lg:bg-transparent lg:px-8 lg:backdrop-blur-none">
       <div className="min-w-0 lg:hidden">
         <Brand />
       </div>
@@ -369,11 +470,27 @@ function MobileTopBar({ onSearch, staff }: { onSearch?: () => void; staff: boole
 
 // ---------------------------------------------------------------- status
 
-function SyncStatus() {
+function SyncStatus({ compact = false }: { compact?: boolean }) {
   const { data, now, run, report } = useApp();
   const [busy, setBusy] = useState(false);
   const last = data.feed.salesSyncedAt;
   const stale = report.stale.sales || report.stale.stock;
+  const sync = async () => {
+    setBusy(true);
+    await run((s, _a, n) => syncFeed(s, n), "Sales and stock synced", { undo: false });
+    setBusy(false);
+  };
+  if (compact) {
+    const status = `${stale ? "Data is out of date" : "Data is current"} · ${last ? `synced ${ago(last, now)}` : "never synced"}`;
+    return (
+      <RailTip show label={`${status}. Click to sync.`}>
+        <Button variant="ghost" size="icon" className="relative ml-0.5" aria-label={`${status}. Sync sales and stock now`} disabled={busy} onClick={sync}>
+          <RefreshCwIcon className={cn(busy && "animate-spin")} />
+          <span aria-hidden className={cn("absolute top-1.5 right-1.5 size-2 rounded-full ring-2 ring-sidebar", stale ? "bg-st-urgent" : "bg-st-ok")} />
+        </Button>
+      </RailTip>
+    );
+  }
   return (
     <div className="flex items-center justify-between gap-2 rounded-lg border bg-card px-3 py-2">
       <div className="min-w-0 text-xs">
@@ -385,11 +502,7 @@ function SyncStatus() {
         size="icon-sm"
         aria-label="Sync sales and stock now"
         disabled={busy}
-        onClick={async () => {
-          setBusy(true);
-          await run((s, _a, n) => syncFeed(s, n), "Sales and stock synced", { undo: false });
-          setBusy(false);
-        }}
+        onClick={sync}
       >
         <RefreshCwIcon className={cn(busy && "animate-spin")} />
       </Button>
@@ -397,26 +510,38 @@ function SyncStatus() {
   );
 }
 
-function RoleSwitcher() {
+function RoleSwitcher({ compact = false }: { compact?: boolean }) {
   const { viewer, setViewer, data, store } = useApp();
   const value = viewer.role === "supplier" ? `supplier:${viewer.supplierId}` : "staff";
   const label =
     viewer.role === "supplier" ? data.suppliers.find((s) => s.id === viewer.supplierId)?.name ?? "Supplier" : "Operations staff";
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none">
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
-            {store.mode === "shared" ? <CloudIcon className="size-4" /> : <HardDriveIcon className="size-4" />}
-          </span>
-          <span className="min-w-0 flex-1 leading-tight">
-            <span className="block text-[11px] text-muted-foreground">Viewing as</span>
-            <span className="block truncate text-sm font-medium">{label}</span>
-          </span>
-          <ArrowLeftRightIcon className="size-4 text-muted-foreground" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
+      <RailTip show={compact} label={`Viewing as ${label}`}>
+        <DropdownMenuTrigger asChild>
+          <button
+            aria-label={compact ? `Viewing as ${label}. Switch` : undefined}
+            className={cn(
+              "flex items-center gap-2.5 rounded-lg py-1.5 text-left hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+              compact ? "w-10 justify-center px-0" : "w-full px-2",
+            )}
+          >
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+              {store.mode === "shared" ? <CloudIcon className="size-4" /> : <HardDriveIcon className="size-4" />}
+            </span>
+            {!compact && (
+              <>
+                <span className="min-w-0 flex-1 leading-tight">
+                  <span className="block text-[11px] text-muted-foreground">Viewing as</span>
+                  <span className="block truncate text-sm font-medium">{label}</span>
+                </span>
+                <ArrowLeftRightIcon className="size-4 text-muted-foreground" />
+              </>
+            )}
+          </button>
+        </DropdownMenuTrigger>
+      </RailTip>
+      <DropdownMenuContent align={compact ? "end" : "start"} side={compact ? "right" : undefined} className="w-64">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
           Demo sign-in. Pick who you are; a real deployment would use accounts.
         </DropdownMenuLabel>

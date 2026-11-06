@@ -55,15 +55,13 @@ Demo: https://ridgeline-stock-report.vercel.app · Claude Artifact: https://clau
 
 ## 4. How I used AI
 
-I built this with Claude (Claude Code). It worked well at turning the SOP into pure rule functions, at writing tests with the arithmetic spelled out, and at building the UI quickly.
+I used Claude (through Claude Code) for most of the building, starting from the SOP PDF. The biggest help was speed: it turned the PDF into a working app with every screen in a few days. When I asked it to look for errors or stress-test the site, it found real bugs and fixed them. It also explained how each number is worked out and why things were built the way they are, so I can explain the app myself instead of just showing it.
 
-Where it needed correcting:
-- It first counted manual sales as sold but not shipped. They became their own ledger line.
-- "Shipped" first meant "shipped from that day's sales", which pushed stock history negative.
-- The "fake" demo data named a real Denver café.
-- On review, I found long supplier names spilling out of the sidebar.
+It still needed me, though. Some problems only showed up when I looked at the screens: long supplier names were breaking the sidebar, so I sent screenshots and had it fix them. It also didn't think of everything. The sidebar toggle, the interactive stock chart, product photos without brand logos and demo data that matches across the charts were all things I asked for. I also decided what to build next and when to deploy and push.
 
-*(Salik: rewrite this section in your own words before handing in.)*
+A few mistakes were caught along the way. At first it counted manual sales as sold but not shipped, and it treated "shipped" as only that day's sales, which made the stock history go negative. The fake data even used the name of a real café in Denver. Later, the stress test found lists that got slow and forms that accepted dates like Feb 31.
+
+To check its work, I clicked through the live site, tried it on my phone, compared the numbers with section 4 of the SOP, and had it audit its own work against the PDF. My main takeaway: AI is very fast, but it needs someone reviewing it. Every screen and every rule still had to be checked.
 
 ## 5. With one more week
 

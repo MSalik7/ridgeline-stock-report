@@ -6,6 +6,11 @@
  * a reorder where the open orders aren't enough, low-urgent and low-watch
  * products, every order stage, a partial arrival, a closed and a cancelled
  * order, an arrival nobody ordered, and one alert of each chase kind.
+ *
+ * Before that recent story there are six months of ordinary history: each
+ * product restocked on a steady cycle by the orders numbered before its
+ * first recent one (KTL-001 to KTL-004, and so on), so stock charts show a
+ * calm saw-tooth that only touches zero where the story says it should.
  */
 import { addDays, storeDateOf } from "@/domain/dates";
 import { orderMessage } from "@/domain/messages";
@@ -26,10 +31,11 @@ import type {
   SupplierOrder,
   Tracking,
 } from "@/domain/types";
-import { syncFeed } from "./feed";
+import { simulatedSales, syncFeed } from "./feed";
 import { applyChanges } from "./apply";
 
-const SALES_DAYS = 45;
+/** Six months of daily sales, so every chart range has real history behind it. */
+const SALES_DAYS = 180;
 const staff: Actor = { role: "staff" };
 const sup = (supplierId: string): Actor => ({ role: "supplier", supplierId });
 
@@ -45,6 +51,20 @@ export const DEMO_UNIT_COST: Record<string, number> = { ktl: 21.5, grd: 34, drp:
 
 /** Stock each product should have when the demo is generated. CBJ is meant to run out. */
 const TARGET_STOCK: Record<string, number> = { ktl: 290, grd: 170, drp: 820, flt: 540, mug: 640 };
+
+/** A made-up tracking number in the carrier's usual format, the same for the same seed. */
+function fakeTracking(carrier: Tracking["carrier"], seed: string): string {
+  let h = 2166136261;
+  let digits = "";
+  for (let i = 0; digits.length < 12; i++) {
+    h ^= seed.charCodeAt(i % seed.length) + i;
+    h = Math.imul(h, 16777619) >>> 0;
+    digits += String(h % 10);
+  }
+  if (carrier === "UPS") return `1Z4F82W7${digits.slice(0, 10)}`;
+  if (carrier === "DHL") return `44177${digits.slice(0, 5)}`;
+  return `7729${digits.slice(0, 8)}`;
+}
 
 export function buildDemoState(now: Date): AppState {
   const today = storeDateOf(now);
@@ -165,8 +185,8 @@ export function buildDemoState(now: Date): AppState {
   };
 
   const orders: SupplierOrder[] = [
-    mk({ k: -68, id: "o-ktl5", name: "KTL-005", productId: "ktl", supplierId: "foshan", units: 200, orderedOn: d(-68), confirmedOn: d(-65), tracking: [trk("t1", "UPS", "1Z4F82W70398214470", 200, -30)] }),
-    mk({ k: -60, id: "o-ktl6", name: "KTL-006", productId: "ktl", supplierId: "foshan", units: 350, orderedOn: d(-60), confirmedOn: d(-58), tracking: [trk("t2", "FedEx", "772914408815", 350, -28)] }),
+    mk({ k: -88, id: "o-ktl5", name: "KTL-005", productId: "ktl", supplierId: "foshan", units: 200, orderedOn: d(-88), confirmedOn: d(-85), tracking: [trk("t1", "UPS", "1Z4F82W70398214470", 200, -55)] }),
+    mk({ k: -80, id: "o-ktl6", name: "KTL-006", productId: "ktl", supplierId: "foshan", units: 350, orderedOn: d(-80), confirmedOn: d(-78), tracking: [trk("t2", "FedEx", "772914408815", 350, -55)] }),
     mk({ k: -40, id: "o-ktl7", name: "KTL-007", productId: "ktl", supplierId: "foshan", units: 300, orderedOn: d(-40), confirmedOn: d(-37), tracking: [trk("t3", "UPS", "1Z4F82W70399031285", 300, -5)], notes: "Matte black lids" }),
     mk({ k: -9, id: "o-ktl8", name: "KTL-008", productId: "ktl", supplierId: "foshan", units: 400, orderedOn: d(-9), confirmedOn: d(-6), tracking: [] }),
 
@@ -179,8 +199,8 @@ export function buildDemoState(now: Date): AppState {
       extra: [{ at: t(-35, 11), actor: staff, action: "Closed order", detail: "No more coming. 40 units will not arrive. 40 broke in transit; supplier issued a credit note." }],
     }),
 
-    mk({ k: -75, id: "o-flt5", name: "FLT-005", productId: "flt", supplierId: "kawa", units: 1000, orderedOn: d(-75), confirmedOn: d(-72), tracking: [trk("t6", "FedEx", "772913377120", 1000, -40)] }),
-    mk({ k: -50, id: "o-flt6", name: "FLT-006", productId: "flt", supplierId: "kawa", units: 1200, orderedOn: d(-50), confirmedOn: d(-47), tracking: [trk("t7", "UPS", "1Z9R3360A491177052", 700, -16), trk("t8", "UPS", "1Z9R3360A491180264", 500, -4)] }),
+    mk({ k: -88, id: "o-flt5", name: "FLT-005", productId: "flt", supplierId: "kawa", units: 1000, orderedOn: d(-88), confirmedOn: d(-85), tracking: [trk("t6", "FedEx", "772913377120", 1000, -55)] }),
+    mk({ k: -50, id: "o-flt6", name: "FLT-006", productId: "flt", supplierId: "kawa", units: 1200, orderedOn: d(-50), confirmedOn: d(-47), tracking: [trk("t7", "UPS", "1Z9R3360A491177052", 700, -22), trk("t8", "UPS", "1Z9R3360A491180264", 500, -4)] }),
     mk({
       k: -16, id: "o-flt7", name: "FLT-007", productId: "flt", supplierId: "kawa", units: 1500, orderedOn: d(-16), confirmedOn: d(-12), tracking: [],
       chasedAt: { tracking: t(-1, 14) },
@@ -223,14 +243,14 @@ export function buildDemoState(now: Date): AppState {
 
   const arrivals: Arrival[] = [
     arr("a1", "ARR-0001", "drp", 460, -40, [{ orderId: "o-drp2", units: 460 }], "40 broken in transit, not received"),
-    arr("a2", "ARR-0002", "flt", 1000, -30, [{ orderId: "o-flt5", units: 1000 }]),
+    arr("a2", "ARR-0002", "flt", 1000, -45, [{ orderId: "o-flt5", units: 1000 }]),
     arr("a3", "ARR-0003", "mug", 600, -27, [{ orderId: "o-mug3", units: 600 }]),
     arr("a4", "ARR-0004", "grd", 250, -25, [{ orderId: "o-grd3", units: 250 }]),
-    arr("a5", "ARR-0005", "ktl", 550, -20, [
+    arr("a5", "ARR-0005", "ktl", 550, -45, [
       { orderId: "o-ktl5", units: 200 },
       { orderId: "o-ktl6", units: 350 },
     ], "Two orders consolidated in one container"),
-    arr("a6", "ARR-0006", "flt", 700, -6, [{ orderId: "o-flt6", units: 700 }]),
+    arr("a6", "ARR-0006", "flt", 700, -12, [{ orderId: "o-flt6", units: 700 }]),
     arr("a7", "ARR-0007", "drp", 24, -2, [], "Unexpected carton, no packing slip", "no open order to match"),
   ];
 
@@ -239,6 +259,63 @@ export function buildDemoState(now: Date): AppState {
     { id: "c2", productId: "mug", kind: "manual_sale", units: -24, note: "Wholesale to a local cafe (demo customer)", on: d(-8), at: t(-8, 12), actor: staff },
     { id: "c3", productId: "ktl", kind: "adjustment", units: 3, note: "Cycle count: 3 found on the wrong shelf", on: d(-3), at: t(-3, 16), actor: staff },
   ];
+
+  // ---------------------------------------------------------------- six months of restocks
+  // Arrival days per product (days from today), the supplier's usual lead time,
+  // its usual carrier, and the rounding step for order sizes.
+  const HISTORY: Record<string, { arrivals: number[]; lead: number; carrier: Tracking["carrier"]; step: number }> = {
+    ktl: { arrivals: [-168, -138, -108, -78], lead: 42, carrier: "UPS", step: 50 },
+    grd: { arrivals: [-140, -80], lead: 45, carrier: "DHL", step: 50 },
+    drp: { arrivals: [-120], lead: 40, carrier: "DHL", step: 50 },
+    flt: { arrivals: [-165, -135, -105, -75], lead: 44, carrier: "FedEx", step: 100 },
+    cbj: { arrivals: [-150, -100], lead: 42, carrier: "FedEx", step: 50 },
+    mug: { arrivals: [-145, -85], lead: 42, carrier: "UPS", step: 50 },
+  };
+  const unitsOn = (p: Product, k: number) => p.identifiers.reduce((sum, id) => sum + simulatedSales(id.sku, d(k), today) * id.unitsPerSale, 0);
+  const salesBetween = (p: Product, from: number, to: number) => {
+    let sum = 0;
+    for (let k = from; k <= to; k++) sum += unitsOn(p, k);
+    return sum;
+  };
+  const windowStart = d(-45);
+  const recentIn = (pid: string) =>
+    arrivals.filter((a) => a.productId === pid && a.receivedOn >= windowStart).reduce((sum, a) => sum + a.units, 0) +
+    stockChanges.filter((c) => c.productId === pid && c.on >= windowStart).reduce((sum, c) => sum + c.units, 0);
+  const historicOrders: SupplierOrder[] = [];
+  const historicArrivals: Arrival[] = [];
+  for (const p of products) {
+    const h = HISTORY[p.id];
+    // Stock the recent story needs on hand as it starts. The jar is sized to run out 9 days ago.
+    const needed = p.id === "cbj" ? salesBetween(p, -46, -10) : TARGET_STOCK[p.id] - recentIn(p.id) + salesBetween(p, -46, -1);
+    const low = Math.max(h.step, Math.round((salesBetween(p, -SALES_DAYS, -46) / (SALES_DAYS - 45)) * 10 / h.step) * h.step);
+    // Work backwards: each arrival tops stock up from about `low` (10 days of sales) by
+    // what the next cycle sells, rounded to a supplier-friendly size.
+    let before = needed;
+    const sizes: number[] = [];
+    for (let i = h.arrivals.length - 1; i >= 0; i--) {
+      const until = i === h.arrivals.length - 1 ? -46 : h.arrivals[i + 1] - 1;
+      const sold = salesBetween(p, h.arrivals[i], until);
+      // Rounded so the dip before each delivery stays between `low` and one step above it.
+      sizes[i] = Math.ceil((before - low - h.step + sold) / h.step) * h.step;
+      before = before + sold - sizes[i];
+    }
+    h.arrivals.forEach((a, i) => {
+      const seq = i + 1;
+      const name = `${p.code}-${String(seq).padStart(3, "0")}`;
+      const id = `o-${p.id}${seq}`;
+      historicOrders.push(
+        mk({
+          k: a - h.lead, id, name, productId: p.id, supplierId: p.supplierId, units: sizes[i], orderedOn: d(a - h.lead),
+          confirmedOn: d(a - h.lead + 2 + (seq % 2)), tracking: [trk(`th-${p.id}${seq}`, h.carrier, fakeTracking(h.carrier, name), sizes[i], a - 10)],
+        }),
+      );
+      historicArrivals.push(arr(`ah-${p.id}${seq}`, "", p.id, sizes[i], a, [{ orderId: id, units: sizes[i] }]));
+    });
+  }
+  // Arrival names follow the order they came in.
+  const allArrivals = [...historicArrivals, ...arrivals].sort((x, y) => x.receivedOn.localeCompare(y.receivedOn) || x.id.localeCompare(y.id));
+  allArrivals.forEach((a, i) => (a.name = `ARR-${String(i + 1).padStart(4, "0")}`));
+  const allOrders = [...historicOrders, ...orders];
 
   const settings: AppState["settings"] = {
     storeName: "Ridgeline Coffee Supply",
@@ -252,8 +329,8 @@ export function buildDemoState(now: Date): AppState {
     feed: { salesSyncedAt: null, stockSyncedAt: null, demoAnchor: today },
     products,
     suppliers: DEMO_SUPPLIERS,
-    orders,
-    arrivals,
+    orders: allOrders,
+    arrivals: allArrivals,
     stockChanges,
     sales: [],
     outbox: [],
@@ -273,7 +350,8 @@ export function buildDemoState(now: Date): AppState {
       const units = probed.sales
         .filter((s) => s.date < cutoff)
         .reduce((sum, s) => sum + (s.sold["CBJ-15"] ?? 0), 0);
-      counts.set(p.id, units);
+      const delivered = historicArrivals.filter((a) => a.productId === "cbj").reduce((sum, a) => sum + a.units, 0);
+      counts.set(p.id, Math.max(0, units - delivered));
     } else {
       counts.set(p.id, Math.max(0, TARGET_STOCK[p.id] - (warehouseStock(probed, p) - BIG)));
     }

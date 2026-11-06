@@ -5,7 +5,7 @@ A stock report system for a small product business: how much stock there is, how
 - **Live demo:** https://ridgeline-stock-report.vercel.app (open to anyone; each visitor gets their own copy of the demo data)
 - **Claude Artifact:** https://claude.ai/artifact/HwDgKgZ3mbvkBPokdmaXU9 (shared data; opens once the owner shares it with you)
 
-The demo business is **Ridgeline Coffee Supply**, a made-up Denver coffee-gear shop with 6 products, 4 suppliers, 45 days of sales, 14 supplier orders and 7 arrivals. All data is fake, emails use `@example.com`, and tracking numbers are invented.
+The demo business is **Ridgeline Coffee Supply**, a made-up Denver coffee-gear shop with 6 products, 4 suppliers, six months of daily sales, 29 supplier orders and 22 arrivals: steady monthly restocks, then the recent weeks shaped so every SOP rule has a live case. All data is fake, emails use `@example.com`, and tracking numbers are invented.
 
 ## Run it locally (under 5 minutes)
 

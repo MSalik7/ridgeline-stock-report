@@ -24,7 +24,7 @@ function Waiting({ store }: { store: StoreState }) {
           <div>
             <h1 className="text-lg font-semibold">No shared stock data yet</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Load the demo business (Ridgeline Coffee Supply: 6 products, 45 days of sales, supplier orders and arrivals) into shared storage, or try it
+              Load the demo business (Ridgeline Coffee Supply: 6 products, six months of sales, supplier orders and arrivals) into shared storage, or try it
               in a private copy first.
             </p>
           </div>

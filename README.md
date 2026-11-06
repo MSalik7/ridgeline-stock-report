@@ -60,7 +60,7 @@ src/data/        Demo business, simulated store and warehouse feed
 src/app/         React UI: store (shared or private), views, dialogs, components
 src/components/ui/  shadcn/ui primitives
 scripts/         Artifact packaging, seed export
-docs/            Design note, demo outline
+docs/            Design note
 ```
 
 ## Data

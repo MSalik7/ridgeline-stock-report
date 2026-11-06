@@ -8,3 +8,6 @@ seed/
 
 .vercel
 .env*
+
+# Personal recording notes, kept off GitHub
+docs/loom-outline.md

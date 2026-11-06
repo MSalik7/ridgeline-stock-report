@@ -41,9 +41,10 @@ Demo: https://ridgeline-stock-report.vercel.app · Claude Artifact: https://clau
 
 ## 3. How I checked the numbers against section 4
 
-**113 automated tests.**
+**136 automated tests.**
 - **Rules (44 tests):** each test name carries the hand calculation. For example, sales of 10, 10, 10, 10, 14, 14, 14 give trend = (42/3)/(40/4) = 1.4, adjusted burn = 11.714 × 1.4 = 16.4, and suggested order = (60+45) × 16.4 − 500 = 1,222. They cover every forecast row, the trend limits, blanks at zero burn, every flag threshold, every stage and the status order, all three chase rules at their exact boundaries with the 2-day repeat, matching, bundles, and the Denver day boundary across a daylight-saving change.
-- **The other 69:** the outlook, Undo, the scorecard, money and purchase orders, plus demo data generated on four dates. The demo data must show every flag and stage, never go negative, and use only @example.com emails.
+- **The other 92:** the outlook, Undo, the scorecard, money, the stock chart, stock history, input and saved-data checks, plus demo data generated on four dates. The demo data must show every flag and stage, never go negative, and use only @example.com emails.
+- **Stress test:** at 10× the demo (60 products, 290 orders) every screen opens in about 0.3 s or less. It found slow lists, a crash on impossible saved dates and forms that accepted Feb 31; all are fixed.
 - **In the app:** each product page shows its working ("93 ÷ 7 = 13.3"), so anyone can re-check it.
 
 **Interpretations:**

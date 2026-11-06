@@ -19,7 +19,7 @@ npm run dev        # http://localhost:5173
 The app keeps its data in your browser. Setup → Data → "Start over" resets it.
 
 ```bash
-npm test           # 135 tests: SOP section 4 rules, money, demo data, input and saved-data checks
+npm test           # 136 tests: SOP section 4 rules, money, demo data, input and saved-data checks
 npm run build      # typecheck, build, and write artifact/stock-report.html
 ```
 

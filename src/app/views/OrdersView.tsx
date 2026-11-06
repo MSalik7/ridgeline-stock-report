@@ -63,17 +63,14 @@ export function OrdersView({ route }: { route: string }) {
     }
   };
 
-  const match = (o: OrderView) => {
-    if (product !== "all" && o.order.productId !== product) return false;
-    if (stage === "all") return true;
-    if (stage === "open") return o.open;
-    if (stage === "chase") return o.alerts.length > 0;
-    return o.status === stage;
-  };
-  const rows = report.orders.filter(match);
+  // One rule for both the list and the counts on the filter buttons.
+  // "Needs chasing" means a follow-up is due now, the same as the sidebar badge.
+  const inStage = (o: OrderView, s: StageFilter) =>
+    s === "all" ? true : s === "open" ? o.open : s === "chase" ? o.alerts.some((a) => a.due) : o.status === s;
+  const ofProduct = (o: OrderView) => product === "all" || o.order.productId === product;
+  const rows = report.orders.filter((o) => ofProduct(o) && inStage(o, stage));
   const wide = useMediaQuery(MD);
-  const count = (s: StageFilter) =>
-    report.orders.filter((o) => (product === "all" || o.order.productId === product) && (s === "all" ? true : s === "open" ? o.open : s === "chase" ? o.alerts.some((a) => a.due) : o.status === s)).length;
+  const count = (s: StageFilter) => report.orders.filter((o) => ofProduct(o) && inStage(o, s)).length;
 
   return (
     <div className="grid gap-6">

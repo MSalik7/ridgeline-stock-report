@@ -7,7 +7,7 @@
  * we run out before it gets here?". This module adds the timing on top,
  * without changing any SOP number.
  */
-import { addDays, daysBetween } from "./dates";
+import { addDays, byTime, daysBetween } from "./dates";
 import { shipmentStates, type OrderProgress } from "./orders";
 import type { StoreDate, SupplierOrder } from "./types";
 
@@ -78,7 +78,7 @@ export function buildOutlook(input: {
   minHorizon: number;
 }): Outlook {
   const { burn, today } = input;
-  const incoming = [...input.incoming].sort((a, b) => a.expectedOn.localeCompare(b.expectedOn));
+  const incoming = [...input.incoming].sort((a, b) => byTime(a.expectedOn, b.expectedOn));
   const onTime = incoming.filter((i) => !i.late);
   const lastDay = onTime.length ? daysBetween(today, onTime[onTime.length - 1].expectedOn) : 0;
   const horizon = Math.min(120, Math.max(input.minHorizon, lastDay + 14, 30));

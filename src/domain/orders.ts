@@ -1,4 +1,4 @@
-import { addDays, daysBetween, storeDateOf } from "./dates";
+import { addDays, byTime, daysBetween, storeDateOf } from "./dates";
 import type { Arrival, ChaseKind, StoreDate, SupplierOrder, Timestamp, Tracking } from "./types";
 
 /**
@@ -120,7 +120,7 @@ export function orderStatus(order: SupplierOrder, p: OrderProgress): OrderStatus
 export function shipmentStates(order: SupplierOrder, arrivedUnits: number) {
   let left = arrivedUnits;
   return [...order.tracking]
-    .sort((a, b) => a.shippedOn.localeCompare(b.shippedOn) || a.addedAt.localeCompare(b.addedAt))
+    .sort((a, b) => byTime(a.shippedOn, b.shippedOn) || byTime(a.addedAt, b.addedAt))
     .map((t) => {
       const covered = Math.min(t.units, left);
       left -= covered;

@@ -10,7 +10,7 @@ import {
   openCapacities,
   validateAllocations,
 } from "./arrivals";
-import { storeDateOf } from "./dates";
+import { isStoreDate, storeDateOf } from "./dates";
 import { arrivalsByOrder, orderProgress, orderStatus, CHASE_LABEL } from "./orders";
 import type {
   Actor,
@@ -73,8 +73,19 @@ function progressOf(state: AppState, order: SupplierOrder) {
   return { p, status: orderStatus(order, p) };
 }
 
+/** Ceiling on one order, arrival or stock change: far above any real one, low enough that a slipped key can't wreck the totals. */
+const MAX_UNITS = 1_000_000;
+
 function wholePositive(n: number, what: string) {
   if (!Number.isInteger(n) || n <= 0) throw new ActionError(`${what} must be a whole number above 0.`);
+  if (n > MAX_UNITS) throw new ActionError(`${what} can't be more than 1,000,000. Check for an extra digit.`);
+}
+
+/** A day someone typed for something that already happened: real, not ahead of today, and not a year typo like 0202. */
+function pastDay(day: string, what: string, now: Date) {
+  if (!isStoreDate(day)) throw new ActionError(`${what} isn't a real date.`);
+  if (day > storeDateOf(now)) throw new ActionError(`${what} can't be in the future.`);
+  if (day < "2000-01-01") throw new ActionError(`${what} is before 2000. Check the year.`);
 }
 
 // ---------------------------------------------------------------- orders
@@ -89,6 +100,7 @@ export interface NewOrderInput {
 
 export function createOrder(state: AppState, input: NewOrderInput, actor: Actor, now: Date) {
   wholePositive(input.units, "Units");
+  pastDay(input.orderedOn, "The order date", now);
   const product = state.products.find((p) => p.id === input.productId);
   if (!product) throw new ActionError("Pick a product.");
   if (!state.suppliers.some((s) => s.id === input.supplierId)) throw new ActionError("Pick a supplier.");
@@ -187,6 +199,7 @@ export function addTracking(state: AppState, orderId: string, items: TrackingInp
     if (existing.has(t.number.trim().toUpperCase())) throw new ActionError(`${t.number.trim()} is already on this order.`);
     existing.add(t.number.trim().toUpperCase());
     wholePositive(t.units, "Units per tracking number");
+    pastDay(t.shippedOn, "The ship date", now);
   }
   const already = order.tracking.reduce((s, t) => s + t.units, 0);
   const adding = items.reduce((s, t) => s + t.units, 0);
@@ -363,6 +376,7 @@ export interface ArrivalInput {
 
 export function recordArrival(state: AppState, input: ArrivalInput, actor: Actor, now: Date) {
   wholePositive(input.units, "Units");
+  pastDay(input.receivedOn, "The arrival date", now);
   if (!state.products.some((p) => p.id === input.productId)) throw new ActionError("Pick a product.");
   const caps = openCapacities(state, input.productId);
   let allocations: Allocation[];
@@ -454,7 +468,7 @@ export function editArrival(state: AppState, arrivalId: string, edit: ArrivalEdi
   const arrival = state.arrivals.find((a) => a.id === arrivalId);
   if (!arrival) throw new ActionError("That arrival no longer exists.");
   wholePositive(edit.units, "Units");
-  if (edit.receivedOn > storeDateOf(now)) throw new ActionError("The arrival date can't be in the future.");
+  pastDay(edit.receivedOn, "The arrival date", now);
 
   const orderedOn = new Map(state.orders.map((o) => [o.id, o.orderedOn]));
   const names = new Map(state.orders.map((o) => [o.id, o.name]));
@@ -522,6 +536,8 @@ export function logStockChange(
 ): ChangeSet {
   if (!state.products.some((p) => p.id === input.productId)) throw new ActionError("Pick a product.");
   if (!Number.isInteger(input.units) || input.units === 0) throw new ActionError("Units must be a whole number other than 0.");
+  if (Math.abs(input.units) > MAX_UNITS) throw new ActionError("Units can't be more than 1,000,000. Check for an extra digit.");
+  pastDay(input.on, "The date", now);
   if (!input.note.trim()) throw new ActionError("Add a note saying why stock changed.");
   const units = input.kind === "manual_sale" ? -Math.abs(input.units) : input.units;
   const change: StockChange = {
@@ -548,6 +564,11 @@ export function saveProduct(state: AppState, product: Product): ChangeSet {
     throw new ActionError(`Another product already uses the code ${code}.`);
   }
   if (!product.identifiers.length) throw new ActionError("Add at least one sales identifier (SKU).");
+  const count = product.stockCount;
+  if (!Number.isInteger(count.units) || count.units < 0 || count.units > 10 * MAX_UNITS) {
+    throw new ActionError("Units in the warehouse must be a whole number from 0 to 10,000,000.");
+  }
+  if (!isStoreDate(count.date)) throw new ActionError("The stock count date isn't a real date.");
   const seen = new Set<string>();
   for (const id of product.identifiers) {
     const sku = id.sku.trim().toUpperCase();

@@ -1,6 +1,34 @@
-import { storeDateOf } from "./dates";
+import { byTime, storeDateOf } from "./dates";
 import { unitsShippedByDay } from "./sales";
-import type { Actor, AppState, Product, StoreDate, Timestamp } from "./types";
+import type { Actor, AppState, Arrival, Product, StockChange, StoreDate, SupplierOrder, Timestamp } from "./types";
+
+/*
+ * Lookups shared by every product's ledger, built once per version of the
+ * data. Collections are replaced, never edited in place, when data changes,
+ * so the array itself is a safe cache key.
+ */
+const orderNames = new WeakMap<SupplierOrder[], Map<string, string>>();
+const arrivalsByProduct = new WeakMap<Arrival[], Map<string, Arrival[]>>();
+const changesByProduct = new WeakMap<StockChange[], Map<string, StockChange[]>>();
+
+function cached<K extends object, V>(cache: WeakMap<K, V>, key: K, make: () => V): V {
+  let v = cache.get(key);
+  if (!v) {
+    v = make();
+    cache.set(key, v);
+  }
+  return v;
+}
+
+function byProduct<T extends { productId: string }>(xs: T[]): Map<string, T[]> {
+  const m = new Map<string, T[]>();
+  for (const x of xs) {
+    const list = m.get(x.productId);
+    if (list) list.push(x);
+    else m.set(x.productId, [x]);
+  }
+  return m;
+}
 
 export type LedgerKind = "count" | "arrival" | "shipped" | "manual_sale" | "adjustment" | "rematch" | "correction";
 
@@ -48,7 +76,7 @@ const KIND_ORDER: Record<LedgerKind, number> = {
  */
 export function stockLedger(state: AppState, product: Product): LedgerEntry[] {
   const start = product.stockCount.date;
-  const orderName = new Map(state.orders.map((o) => [o.id, o.name]));
+  const orderName = cached(orderNames, state.orders, () => new Map(state.orders.map((o) => [o.id, o.name])));
   const rows: Omit<LedgerEntry, "balance">[] = [
     {
       key: `count-${product.id}`,
@@ -62,8 +90,8 @@ export function stockLedger(state: AppState, product: Product): LedgerEntry[] {
     },
   ];
 
-  for (const a of state.arrivals) {
-    if (a.productId !== product.id || a.receivedOn < start) continue;
+  for (const a of cached(arrivalsByProduct, state.arrivals, () => byProduct(state.arrivals)).get(product.id) ?? []) {
+    if (a.receivedOn < start) continue;
     const parts = a.allocations
       .filter((al) => al.units > 0)
       .map((al) => (al.orderId ? `${orderName.get(al.orderId) ?? "deleted order"} ${al.units}` : `not from an order ${al.units}`));
@@ -97,8 +125,8 @@ export function stockLedger(state: AppState, product: Product): LedgerEntry[] {
     }
   }
 
-  for (const c of state.stockChanges) {
-    if (c.productId !== product.id || c.on < start) continue;
+  for (const c of cached(changesByProduct, state.stockChanges, () => byProduct(state.stockChanges)).get(product.id) ?? []) {
+    if (c.on < start) continue;
     rows.push({
       key: `chg-${c.id}`,
       productId: product.id,
@@ -127,9 +155,9 @@ export function stockLedger(state: AppState, product: Product): LedgerEntry[] {
 
   rows.sort(
     (a, b) =>
-      a.date.localeCompare(b.date) ||
+      byTime(a.date, b.date) ||
       KIND_ORDER[a.kind] - KIND_ORDER[b.kind] ||
-      (a.at ?? "").localeCompare(b.at ?? ""),
+      byTime(a.at ?? "", b.at ?? ""),
   );
 
   let balance = 0;

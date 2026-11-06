@@ -51,11 +51,15 @@ function readSeen(now: Date): string {
 }
 
 /** Bell in the top bar: what changed that you didn't do yourself. */
+/** Items drawn per page of the list: a busy fortnight can hold hundreds. */
+const PAGE = 30;
+
 export function ActivityBell() {
   const { data, report, actor, now } = useApp();
   const feed = useMemo(() => activityFeed(data, report, actor, now), [data, report, actor, now]);
   const [seenAt, setSeenAt] = useState(() => readSeen(now));
   const [open, setOpen] = useState(false);
+  const [limit, setLimit] = useState(PAGE);
   const fresh = useMemo(() => unread(feed, seenAt), [feed, seenAt]);
   const freshKeys = useMemo(() => new Set(fresh.map((f) => f.key)), [fresh]);
 
@@ -83,6 +87,7 @@ export function ActivityBell() {
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
+        if (o) setLimit(PAGE);
         // Items stay marked new while the list is open, then count as seen.
         if (!o && n) markSeen();
       }}
@@ -114,8 +119,8 @@ export function ActivityBell() {
         ) : (
           <div className="max-h-[min(28rem,65dvh)] overflow-y-auto overscroll-contain">
             {[
-              { label: "New", items: feed.filter((a) => freshKeys.has(a.key)) },
-              { label: n ? "Earlier" : null, items: feed.filter((a) => !freshKeys.has(a.key)) },
+              { label: "New", items: feed.filter((a) => freshKeys.has(a.key)).slice(0, limit) },
+              { label: n ? "Earlier" : null, items: feed.filter((a) => !freshKeys.has(a.key)).slice(0, Math.max(0, limit - n)) },
             ]
               .filter((g) => g.items.length)
               .map((g) => (
@@ -128,6 +133,13 @@ export function ActivityBell() {
                   </ol>
                 </section>
               ))}
+            {feed.length > limit && (
+              <div className="border-t px-4 py-2.5">
+                <Button variant="outline" size="sm" className="w-full" onClick={() => setLimit((l) => l + PAGE)}>
+                  Show {Math.min(PAGE, feed.length - limit)} older
+                </Button>
+              </div>
+            )}
           </div>
         )}
         <div className="border-t px-4 py-2.5 text-xs text-muted-foreground">

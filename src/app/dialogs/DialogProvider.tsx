@@ -1,4 +1,4 @@
-import { useCallback, useContext, useState, type ReactNode } from "react";
+import { useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { DialogContext as Ctx } from "../ctx";
 import type { ChaseKind } from "@/domain/types";
 import { NewOrderDialog, EditOrderDialog, TrackingDialog } from "./OrderDialogs";
@@ -43,20 +43,24 @@ export interface Dialogs {
 export function DialogProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState<Open>(null);
   const close = useCallback(() => setOpen(null), []);
-  const api: Dialogs = {
-    newOrder: (o) => setOpen({ kind: "newOrder", ...o }),
-    editOrder: (orderId) => setOpen({ kind: "editOrder", orderId }),
-    tracking: (orderId) => setOpen({ kind: "tracking", orderId }),
-    arrival: (o) => setOpen({ kind: "arrival", ...o }),
-    match: (arrivalId) => setOpen({ kind: "match", arrivalId }),
-    editArrival: (arrivalId) => setOpen({ kind: "editArrival", arrivalId }),
-    stockChange: (productId) => setOpen({ kind: "stockChange", productId }),
-    orderMessage: (orderId) => setOpen({ kind: "orderMessage", orderId }),
-    chase: (orderId, chase) => setOpen({ kind: "chase", orderId, chase }),
-    chaseAll: () => setOpen({ kind: "chaseAll" }),
-    reorderPlan: () => setOpen({ kind: "reorderPlan" }),
-    purchaseOrder: (orderIds) => setOpen({ kind: "purchaseOrder", orderIds }),
-  };
+  // Stable for the life of the app: opening a dialog must not re-render every screen that can open one.
+  const api = useMemo<Dialogs>(
+    () => ({
+      newOrder: (o) => setOpen({ kind: "newOrder", ...o }),
+      editOrder: (orderId) => setOpen({ kind: "editOrder", orderId }),
+      tracking: (orderId) => setOpen({ kind: "tracking", orderId }),
+      arrival: (o) => setOpen({ kind: "arrival", ...o }),
+      match: (arrivalId) => setOpen({ kind: "match", arrivalId }),
+      editArrival: (arrivalId) => setOpen({ kind: "editArrival", arrivalId }),
+      stockChange: (productId) => setOpen({ kind: "stockChange", productId }),
+      orderMessage: (orderId) => setOpen({ kind: "orderMessage", orderId }),
+      chase: (orderId, chase) => setOpen({ kind: "chase", orderId, chase }),
+      chaseAll: () => setOpen({ kind: "chaseAll" }),
+      reorderPlan: () => setOpen({ kind: "reorderPlan" }),
+      purchaseOrder: (orderIds) => setOpen({ kind: "purchaseOrder", orderIds }),
+    }),
+    [],
+  );
   return (
     <Ctx.Provider value={api}>
       {children}

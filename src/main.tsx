@@ -10,6 +10,7 @@ import { App } from "@/app/App";
 import { initTheme } from "@/app/theme";
 import { AppProvider } from "@/app/context";
 import { DialogProvider } from "@/app/dialogs/DialogProvider";
+import { ErrorBoundary } from "@/app/components/ErrorBoundary";
 import { loadDemoIntoShared, startStore, switchToSandbox, type StoreState } from "@/app/store";
 
 initTheme();
@@ -54,11 +55,13 @@ function Waiting({ store }: { store: StoreState }) {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <TooltipProvider delayDuration={150}>
-      <AppProvider fallback={(s) => <Waiting store={s} />}>
-        <DialogProvider>
-          <App />
-        </DialogProvider>
-      </AppProvider>
+      <ErrorBoundary scope="app">
+        <AppProvider fallback={(s) => <Waiting store={s} />}>
+          <DialogProvider>
+            <App />
+          </DialogProvider>
+        </AppProvider>
+      </ErrorBoundary>
       <Toaster position="top-center" richColors closeButton />
     </TooltipProvider>
   </StrictMode>,

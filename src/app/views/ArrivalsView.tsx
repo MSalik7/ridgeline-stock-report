@@ -1,21 +1,28 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MoreHorizontalIcon, PackagePlusIcon, PencilIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { deleteArrival } from "@/domain/mutations";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { unmatchedUnits } from "@/domain/arrivals";
-import { formatDay } from "@/domain/dates";
-import type { Arrival } from "@/domain/types";
+import { byTime, formatDay } from "@/domain/dates";
+import type { Arrival, SupplierOrder } from "@/domain/types";
 import { useApp } from "../context";
 import { useDialogs } from "../dialogs/DialogProvider";
 import { Confirm, EmptyState, PageHeader, Who } from "../components/bits";
 import { units } from "../format";
 
+/** Rows shown at first, and added per "Show more": keeps the page quick after years of deliveries. */
+const PAGE = 40;
+
 export function ArrivalsView() {
   const { data, report } = useApp();
   const dialogs = useDialogs();
-  const arrivals = [...data.arrivals].sort((a, b) => b.receivedOn.localeCompare(a.receivedOn) || b.name.localeCompare(a.name));
+  const [limit, setLimit] = useState(PAGE);
+  const arrivals = useMemo(() => [...data.arrivals].sort((a, b) => byTime(b.receivedOn, a.receivedOn) || byTime(b.name, a.name)), [data.arrivals]);
+  const orders = useMemo(() => new Map(data.orders.map((o) => [o.id, o])), [data.orders]);
+  const shown = arrivals.slice(0, limit);
+  const older = arrivals.length - shown.length;
 
   return (
     <div className="grid gap-6">
@@ -59,10 +66,20 @@ export function ArrivalsView() {
       ) : (
         <section className="min-w-0 rounded-xl border surface">
           <ul className="divide-y">
-            {arrivals.map((a) => (
-              <ArrivalRow key={a.id} a={a} />
+            {shown.map((a) => (
+              <ArrivalRow key={a.id} a={a} orders={orders} />
             ))}
           </ul>
+          {older > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3 text-xs text-muted-foreground">
+              <span>
+                Showing the latest {units(shown.length)} of {units(arrivals.length)}
+              </span>
+              <Button variant="outline" size="sm" onClick={() => setLimit((n) => n + PAGE)}>
+                Show {units(Math.min(PAGE, older))} older
+              </Button>
+            </div>
+          )}
         </section>
       )}
     </div>
@@ -73,13 +90,12 @@ function productName(data: ReturnType<typeof useApp>["data"], a: Arrival) {
   return data.products.find((p) => p.id === a.productId)?.name ?? "Deleted product";
 }
 
-function ArrivalRow({ a }: { a: Arrival }) {
+function ArrivalRow({ a, orders: names }: { a: Arrival; orders: Map<string, SupplierOrder> }) {
   const { data, run } = useApp();
   const dialogs = useDialogs();
   const [askDelete, setAskDelete] = useState(false);
   const fed = a.allocations.filter((al) => al.orderId && al.units > 0);
   const left = unmatchedUnits(a);
-  const names = new Map(data.orders.map((o) => [o.id, o]));
   const last = a.history[a.history.length - 1];
   return (
     <li className="grid gap-3 px-4 py-3.5 md:grid-cols-[12rem_1fr_auto] md:items-center">

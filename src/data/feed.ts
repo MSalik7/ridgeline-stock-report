@@ -8,8 +8,8 @@
  * matter when someone opens the app.
  */
 import { addDays, daysBetween, dayRange, storeDateOf, storeHourOf } from "@/domain/dates";
-import { stockBeforeShipping } from "@/domain/stock";
-import type { AppState, ChangeSet, FeedStatus, Product, SalesDay, StoreDate } from "@/domain/types";
+import { stockLedger } from "@/domain/stock";
+import type { AppState, ChangeSet, FeedStatus, SalesDay, StoreDate } from "@/domain/types";
 
 interface SkuProfile {
   /** Average sales per day around the demo anchor. */
@@ -78,6 +78,10 @@ function shippingFraction(hour: number) {
 /**
  * Pulls sales and shipments from the last sync up to `now`.
  * Re-runs the last synced day too, since it may have been a partial day.
+ *
+ * Walks the days in order keeping running totals (stock on hand per product,
+ * sold and shipped per SKU), so each day costs the same however long the
+ * history is.
  */
 export function syncFeed(state: AppState, now: Date): ChangeSet {
   const today = storeDateOf(now);
@@ -90,14 +94,38 @@ export function syncFeed(state: AppState, now: Date): ChangeSet {
   const from = state.feed.salesSyncedAt ? storeDateOf(state.feed.salesSyncedAt) : earliest;
   if (from > today) return { put: [], remove: [], config: [] };
 
-  // Work on a copy so each day's shipping sees the stock left by the day before.
-  const days = new Map(state.sales.map((d) => [d.date, d]));
-  const work: AppState = { ...state, sales: [...state.sales] };
-  const touched: SalesDay[] = [];
+  const prevDays = new Map(state.sales.map((d) => [d.date, d]));
 
+  // Stock on hand at the start of `from`, and every non-shipping change from then on
+  // (counts, arrivals, manual changes), per product.
+  const stock = new Map<string, number>();
+  const changes = new Map<string, Map<StoreDate, number>>();
+  for (const p of state.products) {
+    let start = 0;
+    const byDay = new Map<StoreDate, number>();
+    for (const e of stockLedger(state, p)) {
+      if (e.date < from) start += e.change;
+      else if (e.kind !== "shipped") byDay.set(e.date, (byDay.get(e.date) ?? 0) + e.change);
+    }
+    stock.set(p.id, start);
+    changes.set(p.id, byDay);
+  }
+  // Sold and shipped per SKU before `from`: the backlog the warehouse works through.
+  const soldBefore = new Map<string, number>();
+  const shippedBefore = new Map<string, number>();
+  const add = (m: Map<string, number>, perSku: Record<string, number>) => {
+    for (const [sku, n] of Object.entries(perSku)) m.set(sku, (m.get(sku) ?? 0) + n);
+  };
+  for (const d of state.sales) {
+    if (d.date >= from) continue;
+    add(soldBefore, d.sold);
+    add(shippedBefore, d.shipped);
+  }
+
+  const touched: SalesDay[] = [];
   for (const date of dayRange(from, today)) {
     const fraction = date === today ? clamp01(hour / 24) : 1;
-    const prev = days.get(date);
+    const prev = prevDays.get(date);
     const sold: Record<string, number> = { ...(prev?.sold ?? {}) };
     for (const p of state.products) {
       for (const id of p.identifiers) {
@@ -107,18 +135,34 @@ export function syncFeed(state: AppState, now: Date): ChangeSet {
       }
     }
 
-    // Backlog = everything sold before today minus everything shipped before today.
+    // Ship the backlog from earlier days, as far as the morning's stock allows.
     const day: SalesDay = { date, sold, shipped: {} };
-    setDay(work, day);
     const ship = date === today ? shippingFraction(hour) : 1;
-    for (const p of state.products) shipProduct(work, p, date, ship, day);
-
+    for (const p of state.products) {
+      let onHand = stock.get(p.id)! + (changes.get(p.id)!.get(date) ?? 0);
+      // Bundles first is arbitrary; any fixed order keeps the result repeatable.
+      for (const id of p.identifiers) {
+        const backlog = Math.max(0, (soldBefore.get(id.sku) ?? 0) - (shippedBefore.get(id.sku) ?? 0));
+        const canShip = Math.min(Math.floor(backlog * ship), Math.floor(Math.max(0, onHand) / id.unitsPerSale));
+        if (canShip > 0) {
+          day.shipped[id.sku] = canShip;
+          onHand -= canShip * id.unitsPerSale;
+        }
+      }
+    }
     // Keep any shipments already reported for this day if they were higher.
     for (const [sku, n] of Object.entries(prev?.shipped ?? {})) {
       day.shipped[sku] = Math.max(day.shipped[sku] ?? 0, n);
     }
-    setDay(work, day);
-    days.set(date, day);
+
+    // Close the day: stock left after shipping, and the running totals.
+    for (const p of state.products) {
+      let onHand = stock.get(p.id)! + (changes.get(p.id)!.get(date) ?? 0);
+      for (const id of p.identifiers) onHand -= (day.shipped[id.sku] ?? 0) * id.unitsPerSale;
+      stock.set(p.id, onHand);
+    }
+    add(soldBefore, day.sold);
+    add(shippedBefore, day.shipped);
     touched.push(day);
   }
 
@@ -129,34 +173,6 @@ export function syncFeed(state: AppState, now: Date): ChangeSet {
     remove: [],
     config: [{ doc: "feed", data: feed }],
   };
-}
-
-function setDay(work: AppState, day: SalesDay) {
-  const i = work.sales.findIndex((d) => d.date === day.date);
-  if (i >= 0) work.sales[i] = day;
-  else work.sales.push(day);
-}
-
-function shipProduct(work: AppState, product: Product, date: StoreDate, fraction: number, day: SalesDay) {
-  let stock = stockBeforeShipping(work, product, date);
-  // Bundles first is arbitrary; any fixed order keeps the result repeatable.
-  for (const id of product.identifiers) {
-    let soldBefore = 0;
-    let shippedBefore = 0;
-    for (const d of work.sales) {
-      if (d.date < date) {
-        soldBefore += d.sold[id.sku] ?? 0;
-        shippedBefore += d.shipped[id.sku] ?? 0;
-      }
-    }
-    const backlog = Math.max(0, soldBefore - shippedBefore);
-    const want = Math.floor(backlog * fraction);
-    const canShip = Math.min(want, Math.floor(Math.max(0, stock) / id.unitsPerSale));
-    if (canShip > 0) {
-      day.shipped[id.sku] = canShip;
-      stock -= canShip * id.unitsPerSale;
-    }
-  }
 }
 
 /** First day the generator reports, for seeding. */

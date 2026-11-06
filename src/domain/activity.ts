@@ -5,7 +5,7 @@
  * Two are derived, because nobody "does" them: a shipment turning late the
  * day after it was due, and a product running out the day its stock hit 0.
  */
-import { addDays, formatDay } from "./dates";
+import { addDays, byTime, formatDay } from "./dates";
 import type { Report } from "./report";
 import { stockLedger } from "./stock";
 import type { Actor, AppState, Timestamp } from "./types";
@@ -46,10 +46,18 @@ export function activityFeed(state: AppState, report: Report, me: Actor, now: Da
   const product = new Map(state.products.map((p) => [p.id, p]));
   const supplier = new Map(state.suppliers.map((s) => [s.id, s]));
 
+  // Only the window is ever shown, so skip older history before building anything.
+  const fromMs = now.getTime() - days * 86_400_000;
+  const inWindow = (at: string) => {
+    const t = new Date(at).getTime();
+    return t >= fromMs && t <= now.getTime();
+  };
+
   for (const o of state.orders) {
     const p = product.get(o.productId);
     const s = supplier.get(o.supplierId);
     o.history.forEach((h, i) => {
+      if (!inWindow(h.at)) return;
       const base = { key: `o-${o.id}-${i}`, at: h.at, actor: h.actor, href: `#order-${o.id}` };
       const bySupplier = h.actor.role === "supplier";
       const who = (bySupplier ? supplier.get(h.actor.supplierId ?? "")?.name : null) ?? s?.name ?? "The supplier";
@@ -70,6 +78,7 @@ export function activityFeed(state: AppState, report: Report, me: Actor, now: Da
   for (const a of state.arrivals) {
     const p = product.get(a.productId);
     a.history.forEach((h, i) => {
+      if (!inWindow(h.at)) return;
       const base = { key: `a-${a.id}-${i}`, at: h.at, actor: h.actor, href: "#arrivals", kind: "arrival" as const };
       if (h.action === "Recorded arrival") {
         out.push({ ...base, title: `${a.units.toLocaleString("en-US")} × ${p?.name ?? "product"} arrived`, detail: `${a.name} · ${h.detail ?? ""}`.replace(/ · $/, "") });
@@ -80,6 +89,7 @@ export function activityFeed(state: AppState, report: Report, me: Actor, now: Da
   }
 
   for (const c of state.stockChanges) {
+    if (!inWindow(c.at)) continue;
     const name = product.get(c.productId)?.name ?? "a product";
     out.push({
       key: `c-${c.id}`,
@@ -95,7 +105,7 @@ export function activityFeed(state: AppState, report: Report, me: Actor, now: Da
   // Derived: a shipment turns late the morning after it was due.
   for (const o of report.orders) {
     for (const inc of o.incoming) {
-      if (!inc.late) continue;
+      if (!inc.late || !inWindow(`${addDays(inc.expectedOn, 1)}T13:00:00.000Z`)) continue;
       out.push({
         key: `late-${o.order.id}-${inc.expectedOn}-${inc.basis}`,
         at: `${addDays(inc.expectedOn, 1)}T13:00:00.000Z`,
@@ -128,13 +138,9 @@ export function activityFeed(state: AppState, report: Report, me: Actor, now: Da
     });
   }
 
-  const from = now.getTime() - days * 86_400_000;
   return out
-    .filter((x) => {
-      const t = new Date(x.at).getTime();
-      return t >= from && t <= now.getTime();
-    })
-    .sort((a, b) => b.at.localeCompare(a.at))
+    .filter((x) => inWindow(x.at))
+    .sort((a, b) => byTime(b.at, a.at))
     .map((x) => ({ ...x, mine: sameActor(x.actor, me) }));
 }
 

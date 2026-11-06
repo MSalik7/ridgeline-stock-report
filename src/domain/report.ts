@@ -1,5 +1,5 @@
 import { unmatchedUnits } from "./arrivals";
-import { daysBetween, storeDateOf } from "./dates";
+import { byTime, daysBetween, storeDateOf } from "./dates";
 import { STATUS_ORDER, computeForecast, effectiveSettings, type Forecast } from "./forecast";
 import {
   arrivalsByOrder,
@@ -83,10 +83,18 @@ export function buildReport(state: AppState, now: Date): Report {
       incoming: open ? incomingForOrder(order, progress, lead, today) : [],
     };
   });
-  orders.sort((a, b) => b.order.orderedOn.localeCompare(a.order.orderedOn) || b.order.name.localeCompare(a.order.name));
+  orders.sort((a, b) => byTime(b.order.orderedOn, a.order.orderedOn) || b.order.name.localeCompare(a.order.name));
+
+  const openByProduct = new Map<string, OrderView[]>();
+  for (const o of orders) {
+    if (!o.open) continue;
+    const list = openByProduct.get(o.order.productId);
+    if (list) list.push(o);
+    else openByProduct.set(o.order.productId, [o]);
+  }
 
   const products: ProductRow[] = state.products.map((product) => {
-    const openOrders = orders.filter((o) => o.open && o.order.productId === product.id);
+    const openOrders = openByProduct.get(product.id) ?? [];
     const placed = sum(openOrders, (o) => o.progress.placed);
     const inProduction = sum(openOrders, (o) => o.progress.inProduction);
     const onTheWay = sum(openOrders, (o) => o.progress.onTheWay);
@@ -131,10 +139,10 @@ export function buildReport(state: AppState, now: Date): Report {
   const unmatchedArrivals = state.arrivals
     .map((arrival) => ({ arrival, units: unmatchedUnits(arrival) }))
     .filter((u) => u.units > 0)
-    .sort((a, b) => a.arrival.receivedOn.localeCompare(b.arrival.receivedOn));
+    .sort((a, b) => byTime(a.arrival.receivedOn, b.arrival.receivedOn));
 
   const allAlerts = orders.flatMap((o) => o.alerts);
-  const chaseDue = allAlerts.filter((a) => a.due).sort((a, b) => a.since.localeCompare(b.since));
+  const chaseDue = allAlerts.filter((a) => a.due).sort((a, b) => byTime(a.since, b.since));
   const chaseWaiting = allAlerts.filter((a) => !a.due);
 
   const ageHours = (t: string | null) => (t ? (now.getTime() - new Date(t).getTime()) / 3_600_000 : null);

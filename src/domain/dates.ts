@@ -17,6 +17,13 @@ const hourFormatter = new Intl.DateTimeFormat("en-US", {
   hourCycle: "h23",
 });
 
+/** A real calendar day written YYYY-MM-DD: rejects 2026-02-31, 0000-00-00 and 20266-01-01. */
+export function isStoreDate(x: unknown): x is StoreDate {
+  if (typeof x !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(x)) return false;
+  const d = new Date(`${x}T12:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === x;
+}
+
 /** The store calendar day a moment falls on. */
 export function storeDateOf(at: Date | Timestamp): StoreDate {
   return dayFormatter.format(typeof at === "string" ? new Date(at) : at);
@@ -118,4 +125,12 @@ export function ago(t: Timestamp, now: Date): string {
   const hours = Math.round(mins / 60);
   if (hours < 36) return `${hours} h ago`;
   return `${Math.round(hours / 24)} days ago`;
+}
+
+/**
+ * Orders ISO dates and timestamps. They sort correctly as plain strings, and
+ * this is several times faster than localeCompare in the hot paths.
+ */
+export function byTime(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
 }

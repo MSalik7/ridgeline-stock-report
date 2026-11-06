@@ -51,6 +51,7 @@ import { CommandPalette } from "./CommandPalette";
 import { CoffeeBackdrop } from "./components/coffee";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Tour } from "./components/Tour";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useDialogs, type Dialogs } from "./dialogs/DialogProvider";
 
 function useHash() {
@@ -59,7 +60,7 @@ function useHash() {
   useEffect(() => {
     const on = () => {
       setHash(read());
-      if (!read().startsWith("order-")) window.scrollTo({ top: 0 });
+      if (!read().startsWith("order-") && window.scrollY > 0) window.scrollTo({ top: 0 });
     };
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
@@ -115,7 +116,9 @@ export function App() {
           <div className="grid gap-4">
             <StaleBanner />
             <ModeNote />
-            {page}
+            <ErrorBoundary scope="page" resetKey={route}>
+              {page}
+            </ErrorBoundary>
           </div>
         </main>
       </div>

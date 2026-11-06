@@ -15,6 +15,8 @@ import { useSyncExternalStore } from "react";
 import { applyChanges } from "@/data/apply";
 import { buildDemoState } from "@/data/demo";
 import type { AppState, ChangeSet, CollectionName } from "@/domain/types";
+import { DEFAULT_FORECAST } from "@/domain/forecast";
+import { cleanState, validSettings } from "@/domain/validate";
 
 // ---- the slice of the Claude artifact runtime this app uses
 
@@ -106,12 +108,19 @@ export function useStore(): StoreState {
 
 // ---- sandbox
 
-function readSandbox(): AppState | null {
+/** What was saved in this browser: nothing, something unreadable, or a business (with any broken records left out). */
+function readSandbox(): { state: AppState; dropped: number } | "unreadable" | null {
+  let raw: string | null = null;
   try {
-    const raw = localStorage.getItem(SANDBOX_KEY);
-    return raw ? (JSON.parse(raw) as AppState) : null;
+    raw = localStorage.getItem(SANDBOX_KEY);
   } catch {
     return null;
+  }
+  if (!raw) return null;
+  try {
+    return cleanState(JSON.parse(raw)) ?? "unreadable";
+  } catch {
+    return "unreadable";
   }
 }
 function writeSandbox(s: AppState) {
@@ -123,9 +132,16 @@ function writeSandbox(s: AppState) {
 }
 
 function enterSandbox(reason: string, from: AppState | null) {
-  const data = readSandbox() ?? from ?? buildDemoState(new Date());
+  const saved = readSandbox();
+  const data = (typeof saved === "object" && saved?.state) || from || buildDemoState(new Date());
   writeSandbox(data);
-  set({ mode: "sandbox", data, sandboxReason: reason });
+  const repair =
+    saved === "unreadable"
+      ? " The copy saved in this browser couldn't be read, so it started again from fresh data."
+      : saved && saved.dropped
+        ? ` ${saved.dropped} damaged ${saved.dropped === 1 ? "record" : "records"} in the saved copy ${saved.dropped === 1 ? "was" : "were"} left out.`
+        : "";
+  set({ mode: "sandbox", data, sandboxReason: reason + repair });
 }
 
 /** Throws away the private copy and starts over from the shared data or fresh demo data. */
@@ -165,11 +181,15 @@ function subscribeShared(onReady: (state: AppState | null) => void) {
       }
       return;
     }
-    const state = {
-      ...(Object.fromEntries(COLLECTIONS.map((c) => [c, parts[c]])) as Pick<AppState, CollectionName>),
-      settings: parts.settings as AppState["settings"],
-      feed: (parts.feed as AppState["feed"]) ?? { salesSyncedAt: null, stockSyncedAt: null },
-    } as AppState;
+    // Shared rows can be written by anyone with access: leave out any a screen couldn't read.
+    const ps = parts.settings as { storeName?: unknown };
+    const settings = validSettings(ps)
+      ? ps
+      : { storeName: typeof ps.storeName === "string" ? ps.storeName : "Stock report", forecast: DEFAULT_FORECAST, staleAfterHours: 24, reorderEmails: { enabled: false, recipients: [] } };
+    const cleaned = cleanState({ ...Object.fromEntries(COLLECTIONS.map((c) => [c, parts[c] ?? []])), settings, feed: parts.feed });
+    if (!cleaned) return;
+    if (cleaned.dropped) console.warn(`Stock report: left out ${cleaned.dropped} shared records with missing fields.`);
+    const state = cleaned.state;
     sharedSnapshot = state;
     if (!ready) {
       ready = true;

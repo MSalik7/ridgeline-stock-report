@@ -14,6 +14,7 @@ import { EmptyState, PageHeader, go } from "../components/bits";
 import { units } from "../format";
 import { OrderSheet } from "./OrderSheet";
 import { OrdersTabs } from "./ScorecardView";
+import { MD, useMediaQuery } from "../media";
 
 export type StageFilter = "open" | "chase" | OrderStatus | "all";
 
@@ -70,6 +71,7 @@ export function OrdersView({ route }: { route: string }) {
     return o.status === stage;
   };
   const rows = report.orders.filter(match);
+  const wide = useMediaQuery(MD);
   const count = (s: StageFilter) =>
     report.orders.filter((o) => (product === "all" || o.order.productId === product) && (s === "all" ? true : s === "open" ? o.open : s === "chase" ? o.alerts.some((a) => a.due) : o.status === s)).length;
 
@@ -131,81 +133,84 @@ export function OrdersView({ route }: { route: string }) {
         <EmptyState title="No orders match">Try another stage or product, or place a new order.</EmptyState>
       ) : (
         <section className="min-w-0 rounded-xl border surface">
-          <div className="hidden overflow-x-auto md:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-xs text-muted-foreground [&>th]:px-3 [&>th]:py-2.5 [&>th]:font-medium">
-                  <th className="pl-4">Order</th>
-                  <th>Supplier</th>
-                  <th className="text-right">Units</th>
-                  <th className="w-[26%]">Where the units are</th>
-                  <th>Status</th>
-                  <th className="pr-4">Ordered · due</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((o) => (
-                  <tr
-                    key={o.order.id}
-                    onClick={() => go(`order-${o.order.id}`)}
-                    className={cn("cursor-pointer border-b last:border-0 hover:bg-accent/40 [&>td]:px-3 [&>td]:py-3 [&>td]:align-top", openId === o.order.id && "bg-accent/60")}
-                  >
-                    <td className="pl-4">
-                      <a href={`#order-${o.order.id}`} className="font-mono font-medium hover:underline" onClick={(e) => e.stopPropagation()}>
-                        {o.order.name}
-                      </a>
-                      <div className="text-xs text-muted-foreground">{o.product?.name}</div>
-                    </td>
-                    <td className="text-muted-foreground">{o.supplier?.name}</td>
-                    <td className="tnum text-right font-medium">{units(o.order.units)}</td>
-                    <td>
-                      <StageBar p={o.progress} gone={o.status === "closed" ? o.progress.remaining : 0} className="mt-1.5" />
-                      <div className="tnum mt-1.5 text-xs text-muted-foreground">{summary(o)}</div>
-                    </td>
-                    <td>
-                      <OrderBadge status={o.status} />
-                      {o.alerts.map((a) => (
-                        <div key={a.kind} className={cn("mt-1 text-[11px]", a.due ? "text-st-reorder" : "text-muted-foreground")}>
-                          {a.due ? a.reason : `Chased, due again ${a.nextDueOn ? formatDay(a.nextDueOn) : ""}`}
-                        </div>
-                      ))}
-                    </td>
-                    <td className="tnum pr-4 text-muted-foreground">
-                      {formatDay(o.order.orderedOn)} <span className="text-xs">· {age(o, report.today)}</span>
-                      <Due o={o} />
-                    </td>
+          {wide ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-muted-foreground [&>th]:px-3 [&>th]:py-2.5 [&>th]:font-medium">
+                    <th className="pl-4">Order</th>
+                    <th>Supplier</th>
+                    <th className="text-right">Units</th>
+                    <th className="w-[26%]">Where the units are</th>
+                    <th>Status</th>
+                    <th className="pr-4">Ordered · due</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <ul className="divide-y md:hidden">
-            {rows.map((o) => (
-              <li key={o.order.id}>
-                <a href={`#order-${o.order.id}`} className="block px-4 py-3.5 active:bg-accent/60">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-mono font-medium">{o.order.name}</div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {o.product?.name} · {o.supplier?.name}
-                      </div>
-                    </div>
-                    <OrderBadge status={o.status} />
-                  </div>
-                  <StageBar p={o.progress} gone={o.status === "closed" ? o.progress.remaining : 0} className="mt-3" />
-                  <div className="tnum mt-1.5 flex justify-between gap-2 text-xs text-muted-foreground">
-                    <span>{summary(o)}</span>
-                    <Due o={o} />
-                  </div>
-                  {o.alerts.filter((a) => a.due).map((a) => (
-                    <div key={a.kind} className="mt-1 text-xs text-st-reorder">
-                      {a.reason}
-                    </div>
+                </thead>
+                <tbody>
+                  {rows.map((o) => (
+                    <tr
+                      key={o.order.id}
+                      onClick={() => go(`order-${o.order.id}`)}
+                      className={cn("cursor-pointer border-b last:border-0 hover:bg-accent/40 [&>td]:px-3 [&>td]:py-3 [&>td]:align-top", openId === o.order.id && "bg-accent/60")}
+                    >
+                      <td className="pl-4">
+                        <a href={`#order-${o.order.id}`} className="font-mono font-medium hover:underline" onClick={(e) => e.stopPropagation()}>
+                          {o.order.name}
+                        </a>
+                        <div className="text-xs text-muted-foreground">{o.product?.name}</div>
+                      </td>
+                      <td className="text-muted-foreground">{o.supplier?.name}</td>
+                      <td className="tnum text-right font-medium">{units(o.order.units)}</td>
+                      <td>
+                        <StageBar p={o.progress} gone={o.status === "closed" ? o.progress.remaining : 0} className="mt-1.5" />
+                        <div className="tnum mt-1.5 text-xs text-muted-foreground">{summary(o)}</div>
+                      </td>
+                      <td>
+                        <OrderBadge status={o.status} />
+                        {o.alerts.map((a) => (
+                          <div key={a.kind} className={cn("mt-1 text-[11px]", a.due ? "text-st-reorder" : "text-muted-foreground")}>
+                            {a.due ? a.reason : `Chased, due again ${a.nextDueOn ? formatDay(a.nextDueOn) : ""}`}
+                          </div>
+                        ))}
+                      </td>
+                      <td className="tnum pr-4 text-muted-foreground">
+                        {formatDay(o.order.orderedOn)} <span className="text-xs">· {age(o, report.today)}</span>
+                        <Due o={o} />
+                      </td>
+                    </tr>
                   ))}
-                </a>
-              </li>
-            ))}
-          </ul>
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <ul className="divide-y">
+              {rows.map((o) => (
+                <li key={o.order.id}>
+                  <a href={`#order-${o.order.id}`} className="block px-4 py-3.5 active:bg-accent/60">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-mono font-medium">{o.order.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {o.product?.name} · {o.supplier?.name}
+                        </div>
+                      </div>
+                      <OrderBadge status={o.status} />
+                    </div>
+                    <StageBar p={o.progress} gone={o.status === "closed" ? o.progress.remaining : 0} className="mt-3" />
+                    <div className="tnum mt-1.5 flex justify-between gap-2 text-xs text-muted-foreground">
+                      <span>{summary(o)}</span>
+                      <Due o={o} />
+                    </div>
+                    {o.alerts.filter((a) => a.due).map((a) => (
+                      <div key={a.kind} className="mt-1 text-xs text-st-reorder">
+                        {a.reason}
+                      </div>
+                    ))}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
       <OrderSheet orderId={openId} onClose={() => go("orders")} />

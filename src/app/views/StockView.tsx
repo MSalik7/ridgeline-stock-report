@@ -14,6 +14,7 @@ import { PageHeader, go } from "../components/bits";
 import { dec1, factor, units } from "../format";
 import { TodayPanel } from "./TodayPanel";
 import { ProductThumb } from "../components/ProductThumb";
+import { XL, useMediaQuery } from "../media";
 
 type Filter = "all" | "out" | "reorder" | "low" | "gap";
 
@@ -31,6 +32,7 @@ export function StockView() {
   const [filter, setFilter] = useState<Filter>("all");
   const rule = FILTERS.find((f) => f.value === filter)!;
   const rows = report.products.filter(rule.match);
+  const wide = useMediaQuery(XL);
 
   return (
     <div className="grid gap-6">
@@ -96,8 +98,7 @@ export function StockView() {
             })}
           </div>
         </div>
-        <ProductTable rows={rows} />
-        <ProductCards rows={rows} />
+        {wide ? <ProductTable rows={rows} /> : <ProductCards rows={rows} />}
       </section>
     </div>
   );
@@ -201,7 +202,7 @@ function last14(r: ProductRow, today: string) {
 function ProductTable({ rows }: { rows: ProductRow[] }) {
   const { report } = useApp();
   return (
-    <div className="hidden overflow-x-auto xl:block">
+    <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-left text-xs text-muted-foreground [&>th]:px-3 [&>th]:py-2.5 [&>th]:font-medium">
@@ -283,7 +284,7 @@ function ProductTable({ rows }: { rows: ProductRow[] }) {
 
 function ProductCards({ rows }: { rows: ProductRow[] }) {
   return (
-    <ul className="grid gap-3 p-3 sm:grid-cols-2 xl:hidden">
+    <ul className="grid gap-3 p-3 sm:grid-cols-2">
       {rows.map((r) => {
         const f = r.forecast;
         return (

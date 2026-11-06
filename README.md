@@ -19,7 +19,7 @@ npm run dev        # http://localhost:5173
 The app keeps its data in your browser. Setup → Data → "Start over" resets it.
 
 ```bash
-npm test           # 113 tests: SOP section 4 rules, money, demo data checks
+npm test           # 135 tests: SOP section 4 rules, money, demo data, input and saved-data checks
 npm run build      # typecheck, build, and write artifact/stock-report.html
 ```
 
@@ -32,6 +32,7 @@ npm run build      # typecheck, build, and write artifact/stock-report.html
 - **Money:** stock value, cash promised to suppliers, and what reorders will cost.
 - **Supplier portal:** a supplier sees only their orders and can confirm them and add tracking.
 - **Everywhere:** a guided tour on first visit, an activity bell, Undo on every action, Ctrl/Cmd+K search, light and dark themes, and a phone layout at 390 px.
+- **Safety nets:** saved data is checked on load (broken records are left out and named), forms refuse impossible dates and runaway numbers, and a screen that fails shows a way back instead of a blank page. Stress-tested at 10× the demo (60 products, 290 orders): every screen opens in under about 300 ms.
 
 ## Where things are
 
@@ -53,6 +54,7 @@ src/domain/      Pure TypeScript, no UI. Every rule in the SOP lives here once.
   po.ts            Purchase order document
   activity.ts      The activity feed behind the bell
   suppliers.ts     Supplier scorecard
+  validate.ts      Shape checks for data read back from storage
   *.test.ts        Hand-worked checks of every SOP number
 src/data/        Demo business, simulated store and warehouse feed
 src/app/         React UI: store (shared or private), views, dialogs, components

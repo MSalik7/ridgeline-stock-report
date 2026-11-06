@@ -2,7 +2,7 @@
  * The day's to-do list for operations staff, derived from the report.
  * Every item comes with the one action that resolves it.
  */
-import { daysBetween, formatDay, storeDateOf } from "./dates";
+import { byTime, daysBetween, formatDay, storeDateOf } from "./dates";
 import { CHASE_LABEL } from "./orders";
 import type { ProductRow, Report } from "./report";
 import type { Actor, AppState, ChaseKind } from "./types";
@@ -131,5 +131,5 @@ export function doneToday(state: AppState, today: string): DoneItem[] {
     if (storeDateOf(c.at) !== today) continue;
     out.push({ key: `c-${c.id}`, at: c.at, text: `${c.kind === "manual_sale" ? "Logged a sale" : "Adjusted stock"} · ${c.note}`, actor: c.actor, href: `#history-${c.productId}` });
   }
-  return out.sort((x, y) => y.at.localeCompare(x.at));
+  return out.sort((x, y) => byTime(y.at, x.at));
 }

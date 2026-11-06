@@ -9,7 +9,7 @@ Demo: https://ridgeline-stock-report.vercel.app · Claude Artifact: https://clau
 | Screen | Answers | What's on it |
 |---|---|---|
 | **Stock** (home) | Q1–Q5, Q8, Q9 | A ranked **to do today** list, each item with the one button that resolves it. **Plan reorders** batches everything due by supplier. Then every product, worst first. |
-| **Product** | Q3–Q6 | Each flag as a sentence, **try an order**, a stock outlook showing when open orders land, and every formula worked with this product's numbers. |
+| **Product** | Q3–Q6 | Each flag as a sentence, **try an order**, an interactive stock chart (history, then the projection; hover for any day's exact stock and why it moved, drag to zoom), and every formula worked with this product's numbers. |
 | **Supplier orders** | Q7, Q8 | Filters by product and stage, a stage bar per order, every action, carrier links, messages, a printable purchase order and the full history. A scorecard compares each supplier's real lead time with the setting. |
 | **Arrivals** | Q9 | Unmatched arrivals first; the oldest-first match is previewed before saving; hand matching. |
 | **Stock history** | Q10 | A per-product ledger: each change, the stock after it, why and who. |

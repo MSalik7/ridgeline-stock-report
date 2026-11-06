@@ -12,6 +12,7 @@ import { OrderBadge, StockBadge } from "../components/badges";
 import { CoverageBar, SalesChart, StageBar } from "../components/charts";
 import { PageHeader, Panel, Stat, UnitsInput, toInt } from "../components/bits";
 import { StockOutlook } from "../components/outlook";
+import { ProductThumb } from "../components/ProductThumb";
 import { dec1, days as fmtDays, factor, units } from "../format";
 
 export function ProductView({ id }: { id: string }) {
@@ -41,6 +42,7 @@ function Product({ row }: { row: ProductRow }) {
   return (
     <div className="grid gap-6">
       <PageHeader
+        media={<ProductThumb product={p} size="lg" />}
         eyebrow={
           <a href="#stock" className="inline-flex items-center gap-1 hover:text-foreground">
             <ArrowLeftIcon className="size-3.5" /> Stock
@@ -107,8 +109,8 @@ function Product({ row }: { row: ProductRow }) {
       </div>
 
       <Panel
-        title="Stock outlook"
-        description="When open orders land, and whether the shelf empties first."
+        title="Stock over time"
+        description="Actual stock up to today, then projected: when open orders land, and whether the shelf empties first."
       >
         <StockOutlook row={row} />
       </Panel>

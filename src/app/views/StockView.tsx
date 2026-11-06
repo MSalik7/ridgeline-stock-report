@@ -13,6 +13,7 @@ import { CoverageBar, Sparkline } from "../components/charts";
 import { PageHeader, go } from "../components/bits";
 import { dec1, factor, units } from "../format";
 import { TodayPanel } from "./TodayPanel";
+import { ProductThumb } from "../components/ProductThumb";
 
 type Filter = "all" | "out" | "reorder" | "low" | "gap";
 
@@ -225,10 +226,15 @@ function ProductTable({ rows }: { rows: ProductRow[] }) {
                 className="cursor-pointer border-b last:border-0 hover:bg-accent/40 [&>td]:px-3 [&>td]:py-3 [&>td]:align-top"
               >
                 <td className="pl-4">
-                  <a href={`#product-${r.product.id}`} className="font-medium hover:underline" onClick={(e) => e.stopPropagation()}>
-                    {r.product.name}
-                  </a>
-                  <div className="font-mono text-xs text-muted-foreground">{r.product.code}</div>
+                  <div className="flex items-center gap-3">
+                    <ProductThumb product={r.product} />
+                    <div className="min-w-0">
+                      <a href={`#product-${r.product.id}`} className="font-medium hover:underline" onClick={(e) => e.stopPropagation()}>
+                        {r.product.name}
+                      </a>
+                      <div className="font-mono text-xs text-muted-foreground">{r.product.code}</div>
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <StockBadge status={f.status} />
@@ -284,9 +290,12 @@ function ProductCards({ rows }: { rows: ProductRow[] }) {
           <li key={r.product.id}>
             <a href={`#product-${r.product.id}`} className="block h-full rounded-lg border px-3.5 py-3 transition-colors hover:bg-accent/40 active:bg-accent/60">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{r.product.name}</div>
-                  <div className="font-mono text-xs text-muted-foreground">{r.product.code}</div>
+                <div className="flex min-w-0 items-center gap-3">
+                  <ProductThumb product={r.product} />
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">{r.product.name}</div>
+                    <div className="font-mono text-xs text-muted-foreground">{r.product.code}</div>
+                  </div>
                 </div>
                 <div className="text-right">
                   <StockBadge status={f.status} />

@@ -14,6 +14,7 @@ import { useApp } from "../context";
 import { CopyButton, UnitsInput, toInt } from "../components/bits";
 import { dec1, money, plural, price } from "../format";
 import { PurchaseOrderDialog } from "./PurchaseOrderDialog";
+import { ProductThumb } from "../components/ProductThumb";
 
 interface Pick {
   on: boolean;
@@ -112,6 +113,7 @@ export function ReorderPlanDialog({ onClose }: { onClose: () => void }) {
                           />
                           <label htmlFor={`rp-${id}`} className="min-w-0 cursor-pointer">
                             <span className="flex flex-wrap items-center gap-x-2">
+                              <ProductThumb product={l.row.product} size="xs" className="-my-1 mr-0.5" />
                               <span className="text-sm font-medium">{l.row.product.name}</span>
                               <span
                                 className={cn(

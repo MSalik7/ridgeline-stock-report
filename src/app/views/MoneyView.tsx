@@ -8,6 +8,7 @@ import { useApp } from "../context";
 import { useDialogs } from "../dialogs/DialogProvider";
 import { StockBadge } from "../components/badges";
 import { EmptyState, PageHeader, Panel, go } from "../components/bits";
+import { ProductThumb } from "../components/ProductThumb";
 import { money, moneyShort, plural, price, units } from "../format";
 
 /** Where the money is: stock in the warehouse, cash promised to suppliers, and what reorders will cost. */
@@ -240,10 +241,15 @@ function ProductMoneyTable({ lines }: { lines: MoneyLine[] }) {
               className="cursor-pointer border-b last:border-0 hover:bg-accent/40 [&>td]:px-3 [&>td]:py-3 [&>td]:align-top"
             >
               <td className="pl-4">
-                <a href={`#product-${l.row.product.id}`} className="font-medium hover:underline" onClick={(e) => e.stopPropagation()}>
-                  {l.row.product.name}
-                </a>
-                <div className="font-mono text-xs text-muted-foreground">{l.row.product.code}</div>
+                <div className="flex items-center gap-3">
+                  <ProductThumb product={l.row.product} />
+                  <div className="min-w-0">
+                    <a href={`#product-${l.row.product.id}`} className="font-medium hover:underline" onClick={(e) => e.stopPropagation()}>
+                      {l.row.product.name}
+                    </a>
+                    <div className="font-mono text-xs text-muted-foreground">{l.row.product.code}</div>
+                  </div>
+                </div>
               </td>
               <td>
                 <StockBadge status={l.row.forecast.status} />
@@ -278,7 +284,8 @@ function ProductMoneyCards({ lines }: { lines: MoneyLine[] }) {
         <li key={l.row.product.id}>
           <a href={`#product-${l.row.product.id}`} className="block h-full rounded-lg border px-3.5 py-3 transition-colors hover:bg-accent/40 active:bg-accent/60">
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+              <ProductThumb product={l.row.product} />
+              <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{l.row.product.name}</div>
                 <div className="text-xs text-muted-foreground">
                   <span className="font-mono">{l.row.product.code}</span> · <Cost l={l} /> each

@@ -26,7 +26,7 @@ npm run build      # typecheck, build, and write artifact/stock-report.html
 ## What it does
 
 - **Stock:** a ranked "to do today" list, then every product worst first, with stock, sold-not-shipped, sales speed and trend, days of stock, reorder flags and suggested orders. "Plan reorders" batches everything due by supplier.
-- **Product:** each flag explained, try an order, a stock outlook showing when open orders land, and every formula worked with real numbers.
+- **Product:** each flag explained, try an order, an interactive stock chart (full history and the projection; hover for any day's exact stock and what moved it, drag to zoom), and every formula worked with real numbers.
 - **Supplier orders:** stages, tracking with carrier links, order and follow-up messages, a printable purchase order, full history, and a supplier scorecard.
 - **Arrivals and stock history:** oldest-first matching, hand matching, and a ledger of every stock change.
 - **Money:** stock value, cash promised to suppliers, and what reorders will cost.
@@ -66,6 +66,17 @@ docs/            Design note, demo outline
 - **On Vercel or locally:** a private copy in each browser.
 - **In the Artifact:** data lives in the artifact's shared database, so staff and suppliers see the same orders live. Someone who can only view the artifact gets a private copy instead.
 - No keys, passwords or tokens in the code. Email runs in test mode: messages are logged under Messages and never sent by the app.
+
+## Photo credits
+
+The six product photos are free-to-use photos from [Unsplash](https://unsplash.com/license), chosen with no brand logos in frame and cropped to 256 px squares in `src/assets/products/`:
+[kettle](https://unsplash.com/photos/black-kettle-on-brown-wooden-table-NTa2s1hgqSc),
+[grinder](https://unsplash.com/photos/black-ceramic-bowl-on-brown-wooden-box-lHD0fGARGuM),
+[dripper](https://unsplash.com/photos/clear-glass-pitcher-G163WX71GFE),
+[filters](https://unsplash.com/photos/white-muffin-tray-on-top-of-white-ceramic-mug-BVuXUt4Q43o),
+[cold brew jar](https://unsplash.com/photos/person-pouring-milk-in-clear-glass-container-kLb38GS_XSU),
+[travel mug](https://unsplash.com/photos/yellow-travel-mug-in-green-grass-cw78QJcjG-4).
+Products added in Setup show their code instead.
 
 ## Deploy
 

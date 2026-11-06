@@ -22,18 +22,23 @@ export function PageHeader({
   description,
   actions,
   eyebrow,
+  media,
 }: {
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   eyebrow?: ReactNode;
+  media?: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0">
-        {eyebrow && <div className="mb-1 text-xs text-muted-foreground">{eyebrow}</div>}
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
-        {description && <p className="mt-1 max-w-prose text-sm text-muted-foreground">{description}</p>}
+      <div className="flex min-w-0 items-end gap-4">
+        {media}
+        <div className="min-w-0">
+          {eyebrow && <div className="mb-1 text-xs text-muted-foreground">{eyebrow}</div>}
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
+          {description && <p className="mt-1 max-w-prose text-sm text-muted-foreground">{description}</p>}
+        </div>
       </div>
       {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
     </div>
